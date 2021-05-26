@@ -1,0 +1,42 @@
+import { Module } from '@nestjs/common';
+import { TwitterModule } from './twitter/twitter.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { DatabaseModule } from "./database.module";
+import { EventModule } from "./events/event.module";
+import { APP_PIPE } from "@nestjs/core";
+import { ValidationPipe } from "@hovoh/nestjs-api-lib";
+import { JwtModule } from "@nestjs/jwt";
+import { EnvironmentModule, EnvironmentService } from "@hovoh/nestjs-environment-module";
+import { GlobalModule } from "./global.module";
+
+export interface IEnv {
+  ENVIRONMENT: 'prod' | 'dev' | 'test';
+  DB_TYPE: 'postgres';
+  DB_USER: string;
+  DB_PASSWORD: string;
+  DB_HOST: string;
+  DB_PORT: number;
+  DB_NAME: string;
+  JWT_SECRET: string;
+  JWT_EXPIRES_IN: string;
+  TWITTER_API_KEY: string;
+  TWITTER_SECRET_KEY: string;
+  TWITTER_ACCESS_TOKEN: string;
+  TWITTER_ACCESS_TOKEN_SECRET: string;
+  TWITTER_BEARER_TOKEN: string;
+}
+
+@Module({
+  imports: [
+    TwitterModule,
+    EventModule,
+    DatabaseModule,
+    GlobalModule
+  ],
+  controllers: [],
+  providers: [{
+    provide: APP_PIPE,
+    useClass: ValidationPipe,
+  },],
+})
+export class AppModule {}
