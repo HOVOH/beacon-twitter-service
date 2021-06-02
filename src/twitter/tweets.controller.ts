@@ -6,7 +6,7 @@ import { AccessTokenGuard, ReqSession, Session } from "@hovoh/nestjs-authenticat
 import { KeysetResults } from "@hovoh/nestjs-api-lib/dist/KeysetResults";
 import { split } from "../utils/utils";
 
-@Controller('v1/twitter/tweets')
+@Controller('api/v1/twitter/tweets')
 @UseGuards(AccessTokenGuard)
 export class TweetsController {
 

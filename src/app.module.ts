@@ -1,12 +1,9 @@
 import { Module } from '@nestjs/common';
 import { TwitterModule } from './twitter/twitter.module';
-import { EventEmitterModule } from '@nestjs/event-emitter';
 import { DatabaseModule } from "./database.module";
 import { EventModule } from "./events/event.module";
 import { APP_PIPE } from "@nestjs/core";
 import { ValidationPipe } from "@hovoh/nestjs-api-lib";
-import { JwtModule } from "@nestjs/jwt";
-import { EnvironmentModule, EnvironmentService } from "@hovoh/nestjs-environment-module";
 import { GlobalModule } from "./global.module";
 
 export interface IEnv {

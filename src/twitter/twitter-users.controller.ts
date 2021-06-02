@@ -6,7 +6,7 @@ import { AccessTokenGuard } from "@hovoh/nestjs-authentication-lib";
 import { ApplicationError, CatchApplicationError } from "@hovoh/nestjs-application-error";
 import { USER_NOT_FOUND } from "./errors.code";
 
-@Controller('v1/twitter/users')
+@Controller('api/v1/twitter/users')
 @UseGuards(AccessTokenGuard)
 export class TwitterUsersController{
 
