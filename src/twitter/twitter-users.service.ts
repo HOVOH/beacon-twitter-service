@@ -78,13 +78,13 @@ export class TwitterUsers{
         .map(user=> this.userPipeline.process(user)))
   }
 
-  async importUsers(usernames: string){
+  async importUsers(usernames: string, tags: string[] = []){
     const iUsers = await this.twitterApi.getUsers(usernames);
     const users = await Promise.all(
       iUsers
       .map(TwitterUser.fromIUser)
       .map(twitterUser => {
-        twitterUser.addTags(IMPORTED_TAG);
+        twitterUser.addTags(IMPORTED_TAG, ...tags);
         return twitterUser;
       })
       .map(user=> this.userPipeline.process(user)));

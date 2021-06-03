@@ -22,7 +22,6 @@ export class TweetsController {
       hasTopics: split(filter.hasTopics),
       noTopicsLabelled: filter.noTopicsLabelled
     }, page);
-
     return new KeysetResults(tweets);
   }
 
