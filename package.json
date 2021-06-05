@@ -37,6 +37,7 @@
     "class-validator": "^0.13.1",
     "cld": "^2.7.0",
     "cookie-parser": "^1.4.5",
+    "fast-csv": "^4.3.6",
     "merge": "^2.1.1",
     "mongodb": "^3.6.6",
     "node-fetch": "^2.6.1",

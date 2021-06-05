@@ -11,7 +11,8 @@ export interface TweetQuery{
   withTags?: string[],
   ids?: string[],
   hasTopics?: string[],
-  noTopicsLabelled?: boolean
+  noTopicsLabelled?: boolean,
+  isLabelled: boolean,
 }
 
 @Injectable()
@@ -38,7 +39,7 @@ export class TweetsService {
       where: {
         "tweetId": {$in: ids}
       }
-    })).add(filter.noTopicsLabelled, (topics) => ({
+    })).add(filter.noTopicsLabelled, () => ({
       where: {
         $or:[
           {
@@ -49,8 +50,13 @@ export class TweetsService {
           }
         ]
       }
-    }))
-      .add(page.keyset, (token) => ({
+    })).add(filter.isLabelled, () => (
+      {
+        where: {
+          "meta._topics": { $exists: true }
+        }
+      }
+    )).add(page.keyset, (token) => ({
       where:{
         "_id": {
           $gt: new ObjectId(token)

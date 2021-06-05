@@ -47,7 +47,9 @@ export class TwitterApi {
     }
     while (hasNext){
       const response: IPaginatedResponse<ITweet[]> = await this.fetchClient.get(`2/users/${id}/tweets?`, query)
-      iTweets.push(...response.data);
+      if (response.meta.result_count > 0){
+        iTweets.push(...response.data);
+      }
       if (response.meta.next_token){
         query.pagination_token = response.meta.next_token
       } else {

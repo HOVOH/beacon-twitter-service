@@ -21,4 +21,7 @@ export class TweetsFilter {
   @IsOptional()
   noTopicsLabelled: boolean
 
+  @IsOptional()
+  isLabelled: boolean
+
 }
