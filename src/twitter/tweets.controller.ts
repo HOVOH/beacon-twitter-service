@@ -33,12 +33,4 @@ export class TweetsController {
     return this.tweetsService.save(tweet);
   }
 
-  @Get("download")
-  @Public()
-  async download(/*@Req() req, @Res() res*/){
-    const tweets = serialize(await this.tweetsService.getLabelled());
-    return tweets
-
-  }
-
 }
