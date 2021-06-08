@@ -64,6 +64,10 @@ export class TweetsService {
       }
     })).add(page.size, (size) =>({
       take: size,
+    })).add(true,()=>({
+      order: {
+        createdAt: -1
+      }
     }));
     return this.tweetsRepository.find(builder.query)
   }
