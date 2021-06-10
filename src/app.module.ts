@@ -22,6 +22,7 @@ export interface IEnv {
   TWITTER_ACCESS_TOKEN_SECRET: string;
   TWITTER_BEARER_TOKEN: string;
   TWEET_ANALYSIS_URL: string;
+  ENABLE_TWEET_SAMPLING: string;
 }
 
 @Module({

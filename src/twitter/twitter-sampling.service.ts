@@ -22,15 +22,14 @@ import { GetAuthorPipe } from "../pipeline/GetAuthorPipe";
 import { RawTwitterUserPipe } from "../pipeline/RawTwitterUserPipe";
 import { SaveTwitterUserPipe } from "../pipeline/SaveTwitterUserPipe";
 
-
 @Injectable()
 export class TwitterSamplingService {
   static readonly NAME = "TwitterSamplingService";
 
   fetchClient: HttpClient;
   private readonly logger = new Logger(TwitterSamplingService.name);
-  tweetsPipeline: BatchPipeline<(string|ITweetSample|ITweet), Tweet>;
-  twitterUsersPipeline: BatchPipeline<string|ITweetSample|IUser, TwitterUser>
+  tweetsPipelineFactory: ()=> BatchPipeline<(string|ITweetSample|ITweet), Tweet>;
+  twitterUsersPipelineFactory: () => BatchPipeline<string|ITweetSample|IUser, TwitterUser>
 
   constructor({ env }: EnvironmentService<IEnv>,
               private eventEmitter: EventService,
@@ -42,24 +41,26 @@ export class TwitterSamplingService {
       env.TWITTER_BEARER_TOKEN,
     );
 
-    this.tweetsPipeline = new BatchPipeline<string|ITweetSample|ITweet, Tweet>([
-      new JsonParserPipe<ITweetSample>(),
-      new MapPipe((tweetSample:ITweetSample) => tweetSample.data),
-      new RawTweetPipe(),
-      new ProcessingPipe<Tweet>(0,[
-        new LanguageRule(),
-        new TopicsRule(env.TWEET_ANALYSIS_URL)
-      ]),
-      saveTweetPipe
-    ])
-    this.twitterUsersPipeline = new BatchPipeline<string|ITweetSample|IUser, TwitterUser>([
+    this.tweetsPipelineFactory = () => (new BatchPipeline<string|ITweetSample|ITweet, Tweet>([
+        new JsonParserPipe<ITweetSample>(),
+        new MapPipe((tweetSample:ITweetSample) => tweetSample.data),
+        new RawTweetPipe(),
+        new ProcessingPipe<Tweet>(0,[
+          new LanguageRule(),
+          new TopicsRule(env.TWEET_ANALYSIS_URL)
+        ]),
+        saveTweetPipe
+      ]))
+
+    this.twitterUsersPipelineFactory = () => (new BatchPipeline<string|ITweetSample|IUser, TwitterUser>([
       new JsonParserPipe<ITweetSample>(),
       new GetAuthorPipe(),
       new RawTwitterUserPipe(),
       saveTwitterUserPipe,
-    ])
-    this.startTweetSampling();
-
+    ]))
+    if (env.ENABLE_TWEET_SAMPLING){
+      this.startTweetSampling();
+    }
   }
 
   async startTweetSampling() {
@@ -74,8 +75,8 @@ export class TwitterSamplingService {
       async (jsonTweet: string) => {
         try{
           if (jsonTweet){
-            const tweet = (await this.tweetsPipeline.process([jsonTweet]))[0];
-            const user = (await this.twitterUsersPipeline.process([jsonTweet]))[0];
+            const tweet = (await this.tweetsPipelineFactory().process([jsonTweet]))[0];
+            const user = (await this.twitterUsersPipelineFactory().process([jsonTweet]))[0];
             this.eventEmitter.emit(new SampleTweetEvent(tweet, user));
           }
         } catch (error){
