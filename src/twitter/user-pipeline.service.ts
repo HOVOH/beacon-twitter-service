@@ -1,7 +1,7 @@
 import { forwardRef, Inject, Injectable } from "@nestjs/common";
 import { LangCode } from "../labeling/language-detection-results.entity";
 import { TwitterUser } from "./entities/twitter-user.entity";
-import { TwitterUsers } from "./twitter-users.service";
+import { TwitterUsersService } from "./twitter-users.service";
 
 @Injectable()
 export class TwitterUserPipeline {
@@ -9,8 +9,8 @@ export class TwitterUserPipeline {
   supportedLanguages: LangCode[] = ["en", "fr", "es"];
 
   constructor(
-    @Inject(forwardRef(() => TwitterUsers))
-    private twitterUsers: TwitterUsers) {
+    @Inject(forwardRef(() => TwitterUsersService))
+    private twitterUsers: TwitterUsersService) {
   }
 
   async process(user: TwitterUser) {

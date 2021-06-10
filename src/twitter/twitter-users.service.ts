@@ -17,7 +17,7 @@ export interface IUserUniqueKeys {
 }
 
 @Injectable()
-export class TwitterUsers{
+export class TwitterUsersService{
 
   constructor(private eventEmitter: EventEmitter2,
               @InjectRepository(TwitterUser)

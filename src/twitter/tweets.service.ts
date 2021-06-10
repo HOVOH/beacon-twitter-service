@@ -25,6 +25,10 @@ export class TweetsService {
     return this.tweetsRepository.save(tweet);
   }
 
+  async saveMany(tweets: Tweet[]): Promise<Tweet[]>{
+    return this.tweetsRepository.save(tweets);
+  }
+
   async query(filter: TweetQuery, page?: KeysetPage){
     const builder = new MongoQueryBuilder()
     builder.add(filter.minScore, (minScore) => ({

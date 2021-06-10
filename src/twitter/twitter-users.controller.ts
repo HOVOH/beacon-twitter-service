@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpStatus, Param, Post, Query, UseGuards } from "@nestjs/common";
 import { PostUserRequest } from "./requests/post-user.request";
-import { TwitterUsers } from "./twitter-users.service";
+import { TwitterUsersService } from "./twitter-users.service";
 import { GetUserRequest } from "./requests/get-user.request";
 import { AccessTokenGuard, errors } from "@hovoh/nestjs-authentication-lib";
 import { ApplicationError, CatchApplicationError } from "@hovoh/nestjs-application-error";
@@ -14,7 +14,7 @@ import { USER_NOT_FOUND } from "./errors.code";
 })
 export class TwitterUsersController{
 
-  constructor(private twitterUsers: TwitterUsers) {
+  constructor(private twitterUsers: TwitterUsersService) {
   }
 
   @Get()

@@ -6,7 +6,7 @@ export class HttpClient {
   baseUrl: string;
   bearerToken: string;
 
-  constructor(baseUrl: string, authToken: string) {
+  constructor(baseUrl: string, authToken?: string) {
     this.baseUrl = baseUrl;
     this.bearerToken = authToken;
   }
@@ -18,8 +18,17 @@ export class HttpClient {
   post(path: string, query: any, body: any) {
     return this.fetch(path, query, {
       method: 'post',
-      body: JSON.stringify(body || {}),
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
+      },
+      body: this.formUrlEncode(body),
     }).then(this.handleResponse);
+  }
+
+  formUrlEncode(body: any){
+    return Object.keys(body)
+      .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(body[key]))
+      .join('&');
   }
 
   async stream(path: string, query: any, onData: (string) => any,onError:(any)=>void, onEnd:() => void) {
