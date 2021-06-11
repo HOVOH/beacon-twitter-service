@@ -3,7 +3,7 @@ import { InjectRepository } from "@nestjs/typeorm";
 import { Tweet } from "./entities/tweet.entity";
 import { MongoRepository } from "typeorm";
 import { KeysetPage } from "@hovoh/nestjs-api-lib";
-import { MongoQueryBuilder } from "../utils/mongoQueryBuilder";
+import { keySetFilter, MongoQueryBuilder } from "../utils/mongoQueryBuilder";
 import {ObjectId} from 'mongodb';
 
 export interface TweetQuery{
@@ -15,6 +15,16 @@ export interface TweetQuery{
   isLabelled: boolean,
 }
 
+const CREATED_AT_FIELD = "createdAt";
+const ID_FIELD = "_id"
+
+const orderableMembers = [
+  CREATED_AT_FIELD,
+  ID_FIELD
+] as const;
+
+export type TweetsOrderBy = typeof orderableMembers[number];
+
 @Injectable()
 export class TweetsService {
 
@@ -25,21 +35,25 @@ export class TweetsService {
     return this.tweetsRepository.save(tweet);
   }
 
-  async query(filter: TweetQuery, page?: KeysetPage){
+  async saveMany(tweets: Tweet[]): Promise<Tweet[]>{
+    return this.tweetsRepository.save(tweets);
+  }
+
+  async query(filter: TweetQuery, page?: KeysetPage<TweetsOrderBy>){
     const builder = new MongoQueryBuilder()
-    builder.add(filter.minScore, (minScore) => ({
+    builder.addIf(filter.minScore, (minScore) => ({
       where: {
         "meta.score":{ $gt: minScore}
       }
-    })).add(filter.withTags, (tags) => ({
+    })).addIf(filter.withTags.length > 0, () => ({
       where: {
-        "meta._tags": {$in: tags}
+        "meta._tags": {$in: filter.withTags}
       }
-    })).add(filter.ids, (ids) => ({
+    })).addIf(filter.ids, (ids) => ({
       where: {
         "tweetId": {$in: ids}
       }
-    })).add(filter.noTopicsLabelled, () => ({
+    })).addIf(filter.noTopicsLabelled, () => ({
       where: {
         $or:[
           {
@@ -50,26 +64,26 @@ export class TweetsService {
           }
         ]
       }
-    })).add(filter.isLabelled, () => (
+    })).addIf(filter.isLabelled, () => (
       {
         where: {
           "meta._topics": { $exists: true }
         }
       }
-    )).add(page.keyset, (token) => ({
-      where:{
-        "_id": {
-          $gt: new ObjectId(token)
-        }
-      }
-    })).add(page.size, (size) =>({
-      take: size,
-    })).add(true,()=>({
-      order: {
-        createdAt: -1
-      }
-    }));
+    )).add(this.pageToQuery(page))
     return this.tweetsRepository.find(builder.query)
+  }
+
+  pageToQuery(page: KeysetPage<string>){
+    return keySetFilter(page, (field, value) =>{
+      if (!value) return null;
+      if (field === CREATED_AT_FIELD){
+        return new Date(value)
+      } if (field === ID_FIELD){
+        return new ObjectId(field)
+      }
+      return value;
+    })
   }
 
   async findByTweetId(tweetId: string): Promise<Tweet> {

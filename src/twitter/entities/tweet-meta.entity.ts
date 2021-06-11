@@ -94,13 +94,13 @@ export class TweetReference{
 export class TweetMeta extends HasTags{
 
   @Column()
-  wordsBag: string[];
-
-  @Column()
   tweetScore: number;
 
   @Column(type => Label)
   private _topics: Label<string[]>[];
+
+  @Column()
+  topicsScore: {[k:string ]: number}
 
   @Column()
   lang: LanguageDetectionResults;

@@ -7,10 +7,12 @@ import { Tweet } from "./entities/tweet.entity";
 import { TwitterUser } from "./entities/twitter-user.entity";
 import { TwitterUserPipeline } from "./user-pipeline.service";
 import { TwitterApi } from "./api/twitter-api.service";
-import { TwitterUsers } from "./twitter-users.service";
+import { TwitterUsersService } from "./twitter-users.service";
 import { TwitterUsersController } from "./twitter-users.controller";
 import { TweetsService } from "./tweets.service";
 import { TweetsController } from "./tweets.controller";
+import { SaveTwitterUserPipe } from "../pipeline/SaveTwitterUserPipe";
+import { SaveTweetPipe } from "../pipeline/SaveTweetPipe";
 
 @Module({
   imports: [EnvironmentModule, TypeOrmModule.forFeature([Tweet, TwitterUser])],
@@ -20,8 +22,11 @@ import { TweetsController } from "./tweets.controller";
     TweetPipeline,
     TwitterUserPipeline,
     TwitterApi,
-    TwitterUsers,
-    TweetsService
+    TwitterUsersService,
+    TweetsService,
+    SaveTwitterUserPipe,
+    SaveTweetPipe
   ],
+  exports: [TweetsService, TwitterUsersService]
 })
 export class TwitterModule {}
