@@ -33,7 +33,7 @@ export interface IEnv {
     EventModule,
     DatabaseModule,
     GlobalModule,
-    KafkaModule,
+    //KafkaModule,
   ],
   controllers: [],
   providers: [{
