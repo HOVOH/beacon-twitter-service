@@ -2,8 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Tweet } from "./entities/tweet.entity";
 import { MongoRepository } from "typeorm";
-import { KeysetPage } from "@hovoh/nestjs-api-lib";
-import { keySetFilter, MongoQueryBuilder } from "../utils/mongoQueryBuilder";
+import { keySetFilter, KeysetPage, MongoQueryBuilder } from "@hovoh/nestjs-api-lib";
 import {ObjectId} from 'mongodb';
 
 export interface TweetQuery{
