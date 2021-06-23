@@ -5,6 +5,8 @@ import { EventModule } from "./events/event.module";
 import { APP_PIPE } from "@nestjs/core";
 import { ValidationPipe } from "@hovoh/nestjs-api-lib";
 import { GlobalModule } from "./global.module";
+import { KafkaModule } from "./kafka/kafka.module";
+import { ClientsModule, Transport } from "@nestjs/microservices";
 
 export interface IEnv {
   ENVIRONMENT: 'prod' | 'dev' | 'test';
@@ -30,7 +32,8 @@ export interface IEnv {
     TwitterModule,
     EventModule,
     DatabaseModule,
-    GlobalModule
+    GlobalModule,
+    KafkaModule,
   ],
   controllers: [],
   providers: [{

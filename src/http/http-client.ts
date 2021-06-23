@@ -61,9 +61,7 @@ export class HttpClient {
 
   handleResponse(response: Response): Promise<any> {
     if (!response.ok) {
-      console.log(response);
-      console.log(response.statusText);
-      throw new ApplicationError('twitter_client_failed');
+      throw response;
     }
     return response.json();
   }

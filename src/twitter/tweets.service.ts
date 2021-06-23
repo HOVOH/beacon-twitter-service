@@ -80,7 +80,7 @@ export class TweetsService {
       if (field === CREATED_AT_FIELD){
         return new Date(value)
       } if (field === ID_FIELD){
-        return new ObjectId(field)
+        return new ObjectId(value)
       }
       return value;
     })

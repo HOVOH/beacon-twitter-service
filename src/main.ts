@@ -4,6 +4,7 @@ import { SerializeInterceptor } from "@hovoh/nestjs-api-lib";
 import { ApplicationErrorsFilter } from "@hovoh/nestjs-application-error";
 import { errors } from "@hovoh/nestjs-authentication-lib";
 import cookieParser from 'cookie-parser';
+import { Transport } from "@nestjs/microservices";
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

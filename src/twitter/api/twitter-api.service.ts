@@ -38,14 +38,14 @@ export class TwitterApi {
   //
   // https://api.twitter.com/2/users/:id/tweets?tweet.fields=created_at&expansions=author_id&user.fields=created_at&max_results=5
   //
-  async getUsersTweetsHistory(id: string, startTime?: Date, endTime?: Date, limit = 100): Promise<ITweet[]>{
+  async getUsersTweetsHistory(id: string, startTime?: Date, endTime?: Date, limit = 100, maxNumber = 1000): Promise<ITweet[]>{
     const iTweets: ITweet[] = [];
     let hasNext = true;
     const query: any = {
       "tweet.fields": FULL_TWEET_FIELDS,
       "max_results": limit,
     }
-    while (hasNext){
+    for (let page = 0; hasNext && page * limit < maxNumber; page+=1){
       const response: IPaginatedResponse<ITweet[]> = await this.fetchClient.get(`2/users/${id}/tweets?`, query)
       if (response.meta.result_count > 0){
         iTweets.push(...response.data);
@@ -55,7 +55,6 @@ export class TwitterApi {
       } else {
         hasNext = false;
       }
-
     }
     return iTweets;
   }

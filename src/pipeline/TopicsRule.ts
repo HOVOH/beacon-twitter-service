@@ -16,7 +16,8 @@ export class TopicsRule implements IRule<Tweet> {
     }
 
     assertRelevantTopic(tweet: Tweet){
-        if (Object.keys(tweet.meta.topicsScore).length === 0){
+        const topics = tweet.meta.topicsScore
+        if (!Object.keys(topics).find(key => topics[key] >= 0.1)){
             throw new CriticalDataError("No relevant topics")
         }
     }
