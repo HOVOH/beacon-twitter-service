@@ -21,7 +21,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
-    "@hovoh/nestjs-api-lib": "^1.1.1",
+    "@hovoh/nestjs-api-lib": "^1.1.3",
     "@hovoh/nestjs-application-error": "^1.0.0",
     "@hovoh/nestjs-authentication-lib": "^1.0.2",
     "@hovoh/nestjs-environment-module": "^1.0.4",
@@ -41,7 +41,6 @@
     "cookie-parser": "^1.4.5",
     "fast-csv": "^4.3.6",
     "kafkajs": "^1.15.0",
-    "merge": "^2.1.1",
     "mongodb": "^3.6.6",
     "node-fetch": "^2.6.1",
     "reflect-metadata": "^0.1.13",
