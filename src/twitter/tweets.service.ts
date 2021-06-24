@@ -54,14 +54,7 @@ export class TweetsService {
       }
     })).addIf(filter.noTopicsLabelled, () => ({
       where: {
-        $or:[
-          {
-            "meta._topics": {$exists: false}
-          },
-          {
-            "meta._topics": {$size: 0}
-          }
-        ]
+        "meta._topics": {$exists: false}
       }
     })).addIf(filter.isLabelled, () => (
       {

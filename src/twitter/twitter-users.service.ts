@@ -5,10 +5,18 @@ import { TwitterUser } from "./entities/twitter-user.entity";
 import { ObjectID, Repository } from "typeorm";
 import { isObjectEmpty } from "../utils/utils";
 import { TwitterApi } from "./api/twitter-api.service";
-import { TwitterUserPipeline } from "./user-pipeline.service";
 import { Tweet } from "./entities/tweet.entity";
-import { TweetPipeline } from "./tweet-pipeline.service";
-import { IMPORTED_TAG } from "./entities/tags";
+import { BatchPipeline, ProcessingPipe } from "@hovoh/ts-data-pipeline";
+import { ITweet } from "./api/tweet";
+import { RawTweetPipe } from "../pipeline/RawTweetPipe";
+import { LanguageRule } from "../pipeline/LanguageRule";
+import { IUser } from "./api/user";
+import { RawTwitterUserPipe } from "../pipeline/RawTwitterUserPipe";
+import { SaveTweetPipe } from "../pipeline/SaveTweetPipe";
+import { SaveTwitterUserPipe } from "../pipeline/SaveTwitterUserPipe";
+import { TopicsService } from "./topics.service";
+import { TagTwitterUserPipe } from "../pipeline/TagTwitterUserPipe";
+import { TagTweetPipe } from "../pipeline/TagTweetPipe";
 
 export interface IUserUniqueKeys {
   userId: string,
@@ -19,14 +27,39 @@ export interface IUserUniqueKeys {
 @Injectable()
 export class TwitterUsersService{
 
+  lookUpPipeline: () => BatchPipeline<IUser, TwitterUser>
+  twitterUsersImportPipelineFactory: () => BatchPipeline<IUser, TwitterUser>
+  tweetsImportPipelineFactory: () => BatchPipeline<ITweet, Tweet>
+
   constructor(private eventEmitter: EventEmitter2,
               @InjectRepository(TwitterUser)
               private twitterUsersRepository: Repository<TwitterUser>,
               private twitterApi: TwitterApi,
-              @Inject(forwardRef(() => TwitterUserPipeline))
-              private userPipeline: TwitterUserPipeline,
-              private tweetPipeline: TweetPipeline,
+              private saveTweetPipe: SaveTweetPipe,
+              @Inject(forwardRef(() => SaveTwitterUserPipe))
+              private saveTwitterUserPipe: SaveTwitterUserPipe,
+              topicsRule: TopicsService
   ) {
+
+    this.lookUpPipeline = () => (new BatchPipeline<IUser, TwitterUser>([
+      new RawTwitterUserPipe(),
+      saveTwitterUserPipe
+    ]))
+    this.tweetsImportPipelineFactory = () => (new BatchPipeline<ITweet, Tweet>([
+      new RawTweetPipe(),
+      new ProcessingPipe<Tweet>(0,[
+        new LanguageRule(),
+        //topicsRule
+      ]),
+      new TagTweetPipe(["imported"]),
+      saveTweetPipe
+    ]))
+
+    this.twitterUsersImportPipelineFactory = () => (new BatchPipeline<IUser, TwitterUser>([
+      new RawTwitterUserPipe(),
+      new TagTwitterUserPipe(["imported"]),
+      saveTwitterUserPipe,
+    ]))
   }
 
   async mergeWithRecords(user: TwitterUser): Promise<TwitterUser>{
@@ -72,31 +105,23 @@ export class TwitterUsersService{
   }
 
   async lookupUsers(usernames: string){
-    return Promise.all(
-      (await this.twitterApi.getUsers(usernames))
-        .map(TwitterUser.fromIUser)
-        .map(user=> this.userPipeline.process(user)))
+    return this.lookUpPipeline()
+      .process(await this.twitterApi.getUsers(usernames))
   }
 
   async importUsers(usernames: string, tags: string[] = []){
     const iUsers = await this.twitterApi.getUsers(usernames);
-    const users = await Promise.all(
-      iUsers
-      .map(TwitterUser.fromIUser)
-      .map(twitterUser => {
-        twitterUser.addTags(IMPORTED_TAG, ...tags);
-        return twitterUser;
-      })
-      .map(user=> this.userPipeline.process(user)));
+    const users = await this.twitterUsersImportPipelineFactory().process(iUsers);
 
     const iTweets = await Promise.all(users.map( user => this.twitterApi.getUsersTweetsHistory(user.userId)));
-    iTweets.flatMap(iTweets => iTweets)
-      .map(Tweet.fromITweet)
-      .map(tweet => {
-        tweet.meta.addTags(IMPORTED_TAG);
-        return tweet;
-      })
-      .map(tweet => this.tweetPipeline.process(tweet));
+    await this.tweetsImportPipelineFactory().process(iTweets.flatMap(iTweets => iTweets));
+    // iTweets.flatMap(iTweets => iTweets)
+    //   .map(Tweet.fromITweet)
+    //   .map(tweet => {
+    //     tweet.meta.addTags(IMPORTED_TAG);
+    //     return tweet;
+    //   })
+    //   //.map(tweet => this.tweetPipeline.process(tweet));
     return users;
   }
 
