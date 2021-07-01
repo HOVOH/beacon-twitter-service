@@ -25,6 +25,7 @@ export interface IEnv {
   TWITTER_BEARER_TOKEN: string;
   TWEET_ANALYSIS_URL: string;
   ENABLE_TWEET_SAMPLING: string;
+  KAFKA_BROKERS: string;
 }
 
 @Module({
@@ -33,7 +34,7 @@ export interface IEnv {
     EventModule,
     DatabaseModule,
     GlobalModule,
-    //KafkaModule,
+    KafkaModule,
   ],
   controllers: [],
   providers: [{
