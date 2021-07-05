@@ -6,7 +6,14 @@ export interface IResponse<T>{
   includes: {
     users?: IUser[],
     tweets?: ITweet[],
-  }
+  },
+  errors?: {
+    value: string,
+    detail: string,
+    title: string,
+    resource_type: "user",
+    parameter: "username"
+  }[]
 }
 
 export interface IPaginatedResponse<T> extends IResponse<T>{

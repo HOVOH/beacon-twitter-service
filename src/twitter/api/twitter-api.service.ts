@@ -6,7 +6,7 @@ import { FULL_USER_FIELDS, IUser } from "./user";
 import { FULL_TWEET_FIELDS, ITweet } from "./tweet";
 import { IPaginatedResponse, IResponse } from "./response";
 import { ApplicationError } from "@hovoh/nestjs-application-error";
-import { USER_NOT_FOUND } from "../errors.code";
+import { UNEXPECTED_ERROR, USER_NOT_FOUND } from "../errors.code";
 
 export const TWITTER_API_LINK = 'https://api.twitter.com/';
 
@@ -24,15 +24,23 @@ export class TwitterApi {
 
   async getUsers(usernames: string){
     usernames = usernames.replace("@", "");
+    let response: IResponse<IUser[]>;
     try {
-      const response: IResponse<IUser[]> = await this.fetchClient.get("2/users/by", {
+      response = await this.fetchClient.get("2/users/by", {
         usernames:usernames,
         "user.fields": FULL_USER_FIELDS
       });
-      return response.data;
     } catch (ignored) {
-      throw new ApplicationError(USER_NOT_FOUND);
+      throw new ApplicationError(UNEXPECTED_ERROR);
     }
+    if (response.errors) {
+      if (response.errors.find(error => error.parameter === "username")){
+        throw new ApplicationError(USER_NOT_FOUND);
+      } else {
+        throw new ApplicationError(UNEXPECTED_ERROR);
+      }
+    }
+    return response.data;
   }
 
   //

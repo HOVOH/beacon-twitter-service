@@ -4,13 +4,14 @@ import { TwitterUsersService } from "./twitter-users.service";
 import { GetUserRequest } from "./requests/get-user.request";
 import { AccessTokenGuard, errors } from "@hovoh/nestjs-authentication-lib";
 import { ApplicationError, CatchApplicationError } from "@hovoh/nestjs-application-error";
-import { USER_NOT_FOUND } from "./errors.code";
+import { UNEXPECTED_ERROR, USER_NOT_FOUND } from "./errors.code";
 
 @Controller('api/v1/twitter/users')
 @UseGuards(AccessTokenGuard)
 @CatchApplicationError({
   ...errors.authErrorStatusMap,
-  [USER_NOT_FOUND]: HttpStatus.NOT_FOUND
+  [USER_NOT_FOUND]: HttpStatus.NOT_FOUND,
+  [UNEXPECTED_ERROR]: HttpStatus.INTERNAL_SERVER_ERROR
 })
 export class TwitterUsersController{
 
