@@ -88,8 +88,8 @@ export class TwitterSamplingService {
       },
       (error) => this.logger.error("Stream error "+error.message),
       ()=> {
-        this.logger.log("Twitter sampling stream closed. Waiting 15 sec before restart");
-        const timer = new Promise(res => setTimeout(res, 15000));
+        this.logger.log("Twitter sampling stream closed. Waiting 1 min before restart");
+        const timer = new Promise(res => setTimeout(res, 60000));
         timer.then(() => this.startTweetSampling())
       }
     );
