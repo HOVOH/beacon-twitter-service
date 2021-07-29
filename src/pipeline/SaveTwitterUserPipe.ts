@@ -10,12 +10,6 @@ export class SaveTwitterUserPipe extends TransformerPipe<TwitterUser, TwitterUse
   }
 
   async transform(user: TwitterUser): Promise<TwitterUser> {
-    const existingUser = await this.twitterUsersService.findOne({username: user.username});
-    if (existingUser){
-      existingUser.mergeChange(user);
-      return this.twitterUsersService.save(user);
-    }
     return this.twitterUsersService.upsert(user);
-
   }
 }

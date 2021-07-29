@@ -88,6 +88,15 @@ export class TwitterUser extends HasTags implements IUpdatable<TwitterUser>{
   @Column(type => TimeSeries)
   private _metricsHistory: TimeSeries<UserPublicMetrics>;
 
+  @Column()
+  followingTids: string[]
+
+  @Column()
+  followingTidsHistory: TimeSeries<{
+    add: string[],
+    removed: string[]
+  }>
+
   constructor() {
     super();
     this._nameHistory = new TimeSeries<string>();

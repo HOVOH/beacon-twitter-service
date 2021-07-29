@@ -12,11 +12,14 @@ import { TweetsController } from "./tweets.controller";
 import { SaveTwitterUserPipe } from "../pipeline/SaveTwitterUserPipe";
 import { SaveTweetPipe } from "../pipeline/SaveTweetPipe";
 import { TopicsService } from "./topics.service";
+import { FollowingMonitorService } from "./following-monitor.service";
+import { ScheduleModule } from "@nestjs/schedule";
 
 @Module({
   imports: [
     EnvironmentModule,
-    TypeOrmModule.forFeature([Tweet, TwitterUser])
+    TypeOrmModule.forFeature([Tweet, TwitterUser]),
+    ScheduleModule.forRoot()
   ],
   controllers: [TwitterUsersController, TweetsController],
   providers: [
@@ -26,7 +29,8 @@ import { TopicsService } from "./topics.service";
     TweetsService,
     SaveTwitterUserPipe,
     SaveTweetPipe,
-    TopicsService
+    TopicsService,
+    FollowingMonitorService
   ],
   exports: [TweetsService, TwitterUsersService]
 })

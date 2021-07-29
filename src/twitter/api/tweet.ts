@@ -1,4 +1,5 @@
 import { fieldsConcat } from "./utils";
+import * as faker from 'faker';
 
 export const TWEET_AUTHOR_ID = "author_id"
 export const TWEET_CREATED_AT = "created_at"
@@ -56,8 +57,19 @@ export interface ITweet {
   author_id: string,
   created_at: string,
   source: string,
-  entities: Entities,
-  conversation_id: string,
-  in_reply_to_user_id: string,
-  referenced_tweets: ITweetReference[]
+  entities?: Entities,
+  conversation_id?: string,
+  in_reply_to_user_id?: string,
+  referenced_tweets?: ITweetReference[]
+}
+
+export const iTweetFactory = (iTweet?: Partial<ITweet>) => {
+  const fakeTweet:ITweet = {
+    text: faker.lorem.sentence,
+    id: (Math.random()*1000000)+"",
+    author_id: (Math.random()*1000000)+"",
+    created_at: (new Date).toISOString(),
+    source: "factory",
+}
+  return Object.assign(fakeTweet, iTweet) as ITweet;
 }

@@ -14,52 +14,79 @@ import { IUser } from "./api/user";
 import { RawTwitterUserPipe } from "../pipeline/RawTwitterUserPipe";
 import { SaveTweetPipe } from "../pipeline/SaveTweetPipe";
 import { SaveTwitterUserPipe } from "../pipeline/SaveTwitterUserPipe";
-import { TopicsService } from "./topics.service";
 import { TagTwitterUserPipe } from "../pipeline/TagTwitterUserPipe";
 import { TagTweetPipe } from "../pipeline/TagTweetPipe";
+import { IMPORTED_TAG } from "./tags";
+import { keySetFilter, KeysetPage, MongoQueryBuilder } from "@hovoh/nestjs-api-lib";
+import { ObjectId } from "mongodb";
 
-export interface IUserUniqueKeys {
+const ID_FIELD = "id";
+
+export interface TwitterUserUniqueKeys {
   userId: string,
   id: ObjectID,
   username: string,
 }
 
+export interface UserQuery {
+  withTags?: string[]
+}
+
 @Injectable()
 export class TwitterUsersService{
 
-  lookUpPipeline: () => BatchPipeline<IUser, TwitterUser>
-  twitterUsersImportPipelineFactory: () => BatchPipeline<IUser, TwitterUser>
-  tweetsImportPipelineFactory: () => BatchPipeline<ITweet, Tweet>
-
-  constructor(private eventEmitter: EventEmitter2,
-              @InjectRepository(TwitterUser)
-              private twitterUsersRepository: Repository<TwitterUser>,
+  constructor(@InjectRepository(TwitterUser)
+              private twitterUsersRepo: Repository<TwitterUser>,
               private twitterApi: TwitterApi,
               private saveTweetPipe: SaveTweetPipe,
               @Inject(forwardRef(() => SaveTwitterUserPipe))
-              private saveTwitterUserPipe: SaveTwitterUserPipe,
-              topicsRule: TopicsService
+              private saveTwitterUserPipe: SaveTwitterUserPipe
   ) {
 
-    this.lookUpPipeline = () => (new BatchPipeline<IUser, TwitterUser>([
+  }
+
+  lookUpPipeline() {
+    return new BatchPipeline<IUser, TwitterUser>([
       new RawTwitterUserPipe(),
-      saveTwitterUserPipe
-    ]))
-    this.tweetsImportPipelineFactory = () => (new BatchPipeline<ITweet, Tweet>([
+      this.saveTwitterUserPipe
+    ]);
+  }
+
+  tweetsImportPipelineFactory () {
+    return new BatchPipeline<ITweet, Tweet>([
       new RawTweetPipe(),
-      new ProcessingPipe<Tweet>(0,[
-        new LanguageRule(),
+      new ProcessingPipe<Tweet>(0, [
+        new LanguageRule()
         //topicsRule
       ]),
-      new TagTweetPipe(["imported"]),
-      saveTweetPipe
-    ]))
+      new TagTweetPipe([IMPORTED_TAG]),
+      this.saveTweetPipe
+    ]);
 
-    this.twitterUsersImportPipelineFactory = () => (new BatchPipeline<IUser, TwitterUser>([
+  }
+
+  twitterUsersImportPipelineFactory () {
+    return new BatchPipeline<IUser, TwitterUser>([
       new RawTwitterUserPipe(),
-      new TagTwitterUserPipe(["imported"]),
-      saveTwitterUserPipe,
-    ]))
+      new TagTwitterUserPipe([IMPORTED_TAG]),
+      this.saveTwitterUserPipe,
+    ])
+  }
+
+  findOne(user: Partial<TwitterUser>){
+    if (isObjectEmpty(user)) return null;
+    return this.twitterUsersRepo.findOne(user);
+  }
+
+  save(user: TwitterUser){
+    if (isObjectEmpty(user)) return null;
+    return this.twitterUsersRepo.save(user);
+  }
+
+  async upsert(latest: TwitterUser): Promise<TwitterUser>{
+    if (isObjectEmpty(latest)) return null;
+    const user = await this.mergeWithRecords(latest);
+    return this.save(user);
   }
 
   async mergeWithRecords(user: TwitterUser): Promise<TwitterUser>{
@@ -71,34 +98,18 @@ export class TwitterUsersService{
     return user;
   }
 
-  findOne(user: Partial<TwitterUser>){
-    if (isObjectEmpty(user)) return null;
-    return this.twitterUsersRepository.findOne(user);
-  }
-
-  save(user: TwitterUser){
-    if (isObjectEmpty(user)) return null;
-    return this.twitterUsersRepository.save(user);
-  }
-
-  async upsert(latest: TwitterUser): Promise<TwitterUser>{
-    if (isObjectEmpty(latest)) return null;
-    const user = await this.mergeWithRecords(latest);
-    return this.save(user);
-  }
-
-  async update(keys: Partial<IUserUniqueKeys>, data: Partial<TwitterUser>){
+  async update(keys: Partial<TwitterUserUniqueKeys>, data: Partial<TwitterUser>){
     if (isObjectEmpty(data)) return null;
-    return this.twitterUsersRepository.update(keys, data);
+    return this.twitterUsersRepo.update(keys, data);
   }
 
-  async addTags(keys: Partial<IUserUniqueKeys>, tags: string[]){
+  async addTags(keys: Partial<TwitterUserUniqueKeys>, tags: string[]){
     const user = await this.findOne(keys);
     user.addTags(...tags)
     return this.save(user);
   }
 
-  async removeTags(keys: Partial<IUserUniqueKeys>, tags: string[]){
+  async removeTags(keys: Partial<TwitterUserUniqueKeys>, tags: string[]){
     const user = await this.findOne(keys);
     user.removeTags(...tags);
     return this.save(user);
@@ -109,20 +120,40 @@ export class TwitterUsersService{
       .process(await this.twitterApi.getUsers(usernames))
   }
 
-  async importUsers(usernames: string, tags: string[] = []){
+  async importUsers(usernames: string){
     const iUsers = await this.twitterApi.getUsers(usernames);
     const users = await this.twitterUsersImportPipelineFactory().process(iUsers);
-
     const iTweets = await Promise.all(users.map( user => this.twitterApi.getUsersTweetsHistory(user.userId)));
     await this.tweetsImportPipelineFactory().process(iTweets.flatMap(iTweets => iTweets));
-    // iTweets.flatMap(iTweets => iTweets)
-    //   .map(Tweet.fromITweet)
-    //   .map(tweet => {
-    //     tweet.meta.addTags(IMPORTED_TAG);
-    //     return tweet;
-    //   })
-    //   //.map(tweet => this.tweetPipeline.process(tweet));
     return users;
+  }
+
+  async getFollowing(user: TwitterUser): Promise<TwitterUser[]>{
+    const paginationScroller = this.twitterApi.getFollowings(user.userId);
+    paginationScroller.onRateLimit(() => console.log("Getting rate limited"));
+    const following = await paginationScroller.get();
+    return following.map(iUser => TwitterUser.fromIUser(iUser));
+  }
+
+  async query(filter: UserQuery, page?: KeysetPage<"id">){
+    const builder = new MongoQueryBuilder()
+    builder.addIf(filter.withTags.length > 0, () => ({
+      where: {
+        "_tags": {$in: filter.withTags}
+      }
+    })).add(this.pageToQuery(page))
+    return this.twitterUsersRepo.find(builder.query)
+  }
+
+  pageToQuery(page: KeysetPage<string>){
+    if (!page) return {}
+    return keySetFilter(page, (field, value) =>{
+      if (!value) return null;
+      if (field === ID_FIELD){
+        return new ObjectId(value)
+      }
+      return value;
+    })
   }
 
 }

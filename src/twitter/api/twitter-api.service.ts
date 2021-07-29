@@ -7,19 +7,28 @@ import { FULL_TWEET_FIELDS, ITweet } from "./tweet";
 import { IPaginatedResponse, IResponse } from "./response";
 import { ApplicationError } from "@hovoh/nestjs-application-error";
 import { UNEXPECTED_ERROR, USER_NOT_FOUND } from "../errors.code";
+import { RateLimiter } from "limiter";
+import { PaginationScroller } from "./PaginationScroller";
 
 export const TWITTER_API_LINK = 'https://api.twitter.com/';
+const RATE_LIMIT_WINDOW = 900000;
 
 @Injectable()
 export class TwitterApi {
 
   fetchClient: HttpClient;
+  followRateLimiter: RateLimiter;
 
   constructor({ env }: EnvironmentService<IEnv>) {
     this.fetchClient = new HttpClient(
       TWITTER_API_LINK,
       env.TWITTER_BEARER_TOKEN,
     );
+    this.followRateLimiter = new RateLimiter({
+      tokensPerInterval: 15,
+      interval: RATE_LIMIT_WINDOW,
+      fireImmediately: true,
+    })
   }
 
   async getUsers(usernames: string){
@@ -65,6 +74,19 @@ export class TwitterApi {
       }
     }
     return iTweets;
+  }
+
+  getFollowings(id: string, limit = 1000) {
+    const paginationScroller = new PaginationScroller<IUser>(
+      this.fetchClient,
+      this.followRateLimiter,
+      15
+    );
+    const query: any = {
+      "max_results": limit,
+    }
+    paginationScroller.setParams(`2/users/${id}/following`,query)
+    return paginationScroller;
   }
 
 }

@@ -1,4 +1,5 @@
 import { fieldsConcat } from "./utils";
+import * as faker from 'faker';
 
 export const USER_CREATED_AT = "created_at";
 export const USER_VERIFIED = "verified";
@@ -38,4 +39,25 @@ export interface IUser {
   withheld: boolean,
   pinned_tweet_id?: string,
   description: string
+}
+
+export const iTwitterUserFactory = (user?: Partial<IUser>) => {
+  const fakeUser: IUser = {
+    created_at: (new Date()).toISOString(),
+    id: (Math.random()*100000)+"",
+    username: faker.internet.userName(),
+    name: faker.internet.userName(),
+    verified: false,
+    protected: false,
+    public_metrics: {
+      followers_count: faker.datatype.number({max: 1000}),
+      following_count: faker.datatype.number({max: 1000}),
+      tweet_count: faker.datatype.number({max: 1000}),
+      listed_count: faker.datatype.number({max: 1000})
+    },
+    withheld: false,
+    pinned_tweet_id: null,
+    description: faker.lorem.sentence(),
+  }
+  return Object.assign(fakeUser, user) as IUser;
 }

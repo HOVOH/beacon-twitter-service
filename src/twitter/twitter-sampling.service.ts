@@ -28,8 +28,7 @@ export class TwitterSamplingService {
 
   fetchClient: HttpClient;
   private readonly logger = new Logger(TwitterSamplingService.name);
-  tweetsPipelineFactory: ()=> BatchPipeline<(string|ITweetSample|ITweet), Tweet>;
-  twitterUsersPipelineFactory: () => BatchPipeline<string|ITweetSample|IUser, TwitterUser>
+  tweetAnalysisUrl: string;
 
   constructor({ env }: EnvironmentService<IEnv>,
               private eventEmitter: EventService,
@@ -40,27 +39,32 @@ export class TwitterSamplingService {
       TWITTER_API_LINK,
       env.TWITTER_BEARER_TOKEN,
     );
-
-    this.tweetsPipelineFactory = () => (new BatchPipeline<string|ITweetSample|ITweet, Tweet>([
-        new JsonParserPipe<ITweetSample>(),
-        new MapPipe((tweetSample:ITweetSample) => tweetSample.data),
-        new RawTweetPipe(),
-        new ProcessingPipe<Tweet>(0,[
-          new LanguageRule(),
-          new TopicsRule(env.TWEET_ANALYSIS_URL)
-        ]),
-        saveTweetPipe
-      ]))
-
-    this.twitterUsersPipelineFactory = () => (new BatchPipeline<string|ITweetSample|IUser, TwitterUser>([
-      new JsonParserPipe<ITweetSample>(),
-      new GetAuthorPipe(),
-      new RawTwitterUserPipe(),
-      saveTwitterUserPipe,
-    ]))
+    this.tweetAnalysisUrl = env.TWEET_ANALYSIS_URL;
     if (env.ENABLE_TWEET_SAMPLING){
       this.startTweetSampling();
     }
+  }
+
+  tweetsPipelineFactory() {
+    return new BatchPipeline<string|ITweetSample|ITweet, Tweet>([
+      new JsonParserPipe<ITweetSample>(),
+      new MapPipe((tweetSample:ITweetSample) => tweetSample.data),
+      new RawTweetPipe(),
+      new ProcessingPipe<Tweet>(1,[
+        new LanguageRule(),
+        new TopicsRule(this.tweetAnalysisUrl)
+      ]),
+      this.saveTweetPipe
+    ])
+  }
+
+  twitterUsersPipelineFactory() {
+    return new BatchPipeline<string|ITweetSample|IUser, TwitterUser>([
+      new JsonParserPipe<ITweetSample>(),
+      new GetAuthorPipe(),
+      new RawTwitterUserPipe(),
+      this.saveTwitterUserPipe,
+    ])
   }
 
   async startTweetSampling() {
