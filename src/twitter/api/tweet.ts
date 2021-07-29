@@ -65,7 +65,7 @@ export interface ITweet {
 
 export const iTweetFactory = (iTweet?: Partial<ITweet>) => {
   const fakeTweet:ITweet = {
-    text: faker.lorem.sentence,
+    text: faker.lorem.sentence(),
     id: (Math.random()*1000000)+"",
     author_id: (Math.random()*1000000)+"",
     created_at: (new Date).toISOString(),

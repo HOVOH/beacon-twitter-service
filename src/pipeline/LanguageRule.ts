@@ -8,7 +8,7 @@ const supportedLanguages: LangCode[] = ["en", "fr", "es"];
 
 export class LanguageRule implements IRule<Tweet>  {
 
-  async apply(tweet:Tweet, coll: Tweet[], index: number): Promise<Tweet>{
+  async apply(tweet:Tweet): Promise<Tweet>{
     try{
       const detectionResult = await cld.detect(tweet.text);
       tweet.meta.lang = plainToClass(LanguageDetectionResults, detectionResult);

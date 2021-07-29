@@ -79,7 +79,9 @@
     "moduleFileExtensions": [
       "js",
       "json",
-      "ts"
+      "ts",
+      "node",
+      "pdb"
     ],
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
