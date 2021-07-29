@@ -1,49 +1,15 @@
 import { Column, CreateDateColumn, Entity, ObjectID, ObjectIdColumn, UpdateDateColumn } from "typeorm";
 import { TimeSeries } from "../../utils/timeseries.entity";
 import { Tweet } from "./tweet.entity";
-import { IUser, IUserPublicMetrics } from "../api/user";
+import { IUser } from "../api/user";
 import { IUpdatable } from "../../utils/comparables";
 import { Exclude, Expose } from "class-transformer";
 import { ApplicationError } from "@hovoh/nestjs-application-error";
 import { ID_ARE_NOT_EQUAL } from "../errors.code";
 import { HasTags } from "../../utils/HasTags";
+import { UserPublicMetrics } from "./user-public-metrics.entity";
 
 type TweetOrTweetId = Tweet|{tweetId: string};
-
-@Entity()
-export class UserPublicMetrics {
-  @Column()
-  followerCount: number
-
-  @Column()
-  followingCount: number
-
-  @Column()
-  tweetCount: number
-
-  @Column()
-  listedCount: number;
-
-  static fromIUserPublicMetrics(iMetrics: IUserPublicMetrics){
-    const metrics = new UserPublicMetrics();
-    metrics.followerCount = iMetrics.followers_count;
-    metrics.followingCount = iMetrics.following_count;
-    metrics.tweetCount = iMetrics.tweet_count;
-    metrics.listedCount = iMetrics.listed_count;
-    return metrics
-  }
-
-  static compare(o0:UserPublicMetrics,o1: UserPublicMetrics): number {
-    return o0.followingCount - o1.followerCount ||
-      o0.tweetCount - o1.tweetCount ||
-      o0.followingCount - o1.followingCount;
-  }
-
-  static equal(m0: UserPublicMetrics, m1: UserPublicMetrics): boolean {
-    return UserPublicMetrics.compare(m0, m1) == 0;
-  }
-
-}
 
 @Entity()
 export class TwitterUser extends HasTags implements IUpdatable<TwitterUser>{
@@ -71,7 +37,7 @@ export class TwitterUser extends HasTags implements IUpdatable<TwitterUser>{
   username: string
 
   @Column(type => TimeSeries)
-  private _nameHistory: TimeSeries<string>
+  private readonly _nameHistory: TimeSeries<string>
 
   @Column(type => TimeSeries)
   private _descriptionHistory: TimeSeries<string>
@@ -80,13 +46,13 @@ export class TwitterUser extends HasTags implements IUpdatable<TwitterUser>{
   createdAt:Date
 
   @Column(type => TimeSeries)
-  private _pinnedTweet?: TimeSeries<TweetOrTweetId>
+  private readonly _pinnedTweet?: TimeSeries<TweetOrTweetId>
 
   @CreateDateColumn() public foundAt: Date;
   @UpdateDateColumn() public updatedAt: Date;
 
   @Column(type => TimeSeries)
-  private _metricsHistory: TimeSeries<UserPublicMetrics>;
+  private readonly _metricsHistory: TimeSeries<UserPublicMetrics>;
 
   @Column()
   followingTids: string[]
@@ -110,9 +76,17 @@ export class TwitterUser extends HasTags implements IUpdatable<TwitterUser>{
     return this._nameHistory.last().rightOrDefault(null);
   }
 
+  get nameHistory(): TimeSeries<string> {
+    return this._nameHistory;
+  }
+
   @Expose()
   get description():string{
     return this._descriptionHistory.last().rightOrDefault(null);
+  }
+
+  get descriptionHistory(): TimeSeries<string>{
+    return this._nameHistory;
   }
 
   @Expose()
@@ -120,9 +94,17 @@ export class TwitterUser extends HasTags implements IUpdatable<TwitterUser>{
     return this._pinnedTweet.last().rightOrDefault(null);
   }
 
+  get pinnedTweetHistory(){
+    return this._pinnedTweet;
+  }
+
   @Expose()
   get publicMetrics(){
     return this._metricsHistory.last().rightOrDefault(null);
+  }
+
+  get publicMetricsHistory(){
+    return this._metricsHistory;
   }
 
   updateName(name: string){
@@ -143,14 +125,22 @@ export class TwitterUser extends HasTags implements IUpdatable<TwitterUser>{
 
   static fromIUser(user: IUser): TwitterUser{
     const twitterUser = new TwitterUser();
-    twitterUser._nameHistory.add(new Date(), user.name);
+    if (user.name){
+      twitterUser._nameHistory.add(new Date(), user.name);
+    }
     twitterUser.userId = user.id;
     twitterUser.username = user.username;
     twitterUser.verified = user.verified;
     twitterUser.protected = user.protected;
-    twitterUser.updatePinnedTweet( { tweetId: user.pinned_tweet_id });
-    twitterUser.updatePublicMetrics(UserPublicMetrics.fromIUserPublicMetrics(user.public_metrics))
-    twitterUser.updateDescription(user.description);
+    if (user.pinned_tweet_id){
+      twitterUser.updatePinnedTweet( { tweetId: user.pinned_tweet_id });
+    }
+    if (user.public_metrics){
+      twitterUser.updatePublicMetrics(UserPublicMetrics.fromIUserPublicMetrics(user.public_metrics))
+    }
+    if (user.description){
+      twitterUser.updateDescription(user.description);
+    }
     return twitterUser;
   }
 
@@ -158,16 +148,16 @@ export class TwitterUser extends HasTags implements IUpdatable<TwitterUser>{
     if (this.userId !== newVersion.userId){
       throw new ApplicationError(ID_ARE_NOT_EQUAL);
     }
-    if (this.description !== newVersion.description){
+    if (newVersion.description && this.description !== newVersion.description){
       this.updateDescription(newVersion.description)
     }
-    if (this.name !== newVersion.name){
+    if (newVersion.name && this.name !== newVersion.name){
       this.updateName(newVersion.name);
     }
-    if (this.pinnedTweet.tweetId !== newVersion.pinnedTweet.tweetId){
+    if (newVersion.pinnedTweet && this.pinnedTweet.tweetId !== newVersion.pinnedTweet.tweetId){
       this.updatePinnedTweet(newVersion.pinnedTweet);
     }
-    if (!UserPublicMetrics.equal(this.publicMetrics, newVersion.publicMetrics)){
+    if ((!this.publicMetrics && newVersion.publicMetrics)||(newVersion.publicMetrics && !UserPublicMetrics.equal(this.publicMetrics, newVersion.publicMetrics))){
       this.updatePublicMetrics(newVersion.publicMetrics);
     }
     this.addTags(...newVersion.tags);

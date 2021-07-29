@@ -64,6 +64,8 @@ export class TimeSeries<T>{
   @Column()
   values: T[]
 
+  length = 0;
+
   constructor() {
     this.time = [];
     this.values = [];
@@ -72,13 +74,14 @@ export class TimeSeries<T>{
   add(date: Date, value: T){
     this.time.push(date);
     this.values.push(value);
+    this.length += 1;
   }
 
   last():OptionalPair<Date, T>{
     if (this.time.length === 0){
       return new OptionalPair<Date, T>(null);
     }
-    const pair = new Pair<Date, T>(this.time[this.time.length-1], this.values[this.values.length-1]);
+    const pair = new Pair<Date, T>(this.time[this.length-1], this.values[this.length-1]);
     return new OptionalPair(pair);
   }
 

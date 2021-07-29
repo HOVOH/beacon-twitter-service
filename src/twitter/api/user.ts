@@ -41,22 +41,26 @@ export interface IUser {
   description: string
 }
 
+export const iUserPublicMetricsFactory = (override?: Partial<IUserPublicMetrics>) => {
+  return Object.assign({
+    followers_count: faker.datatype.number({max: 1000}),
+    following_count: faker.datatype.number({max: 1000}),
+    tweet_count: faker.datatype.number({max: 1000}),
+    listed_count: faker.datatype.number({max: 1000})
+  }, override) as IUserPublicMetrics;
+}
+
 export const iTwitterUserFactory = (user?: Partial<IUser>) => {
   const fakeUser: IUser = {
     created_at: (new Date()).toISOString(),
-    id: (Math.random()*100000)+"",
+    id: faker.datatype.number({max: 1000000})+"",
     username: faker.internet.userName(),
     name: faker.internet.userName(),
     verified: false,
     protected: false,
-    public_metrics: {
-      followers_count: faker.datatype.number({max: 1000}),
-      following_count: faker.datatype.number({max: 1000}),
-      tweet_count: faker.datatype.number({max: 1000}),
-      listed_count: faker.datatype.number({max: 1000})
-    },
+    public_metrics: iUserPublicMetricsFactory(),
     withheld: false,
-    pinned_tweet_id: null,
+    pinned_tweet_id: faker.datatype.number({max: 1000000}),
     description: faker.lorem.sentence(),
   }
   return Object.assign(fakeUser, user) as IUser;
