@@ -4,7 +4,7 @@ COPY ./ ./
 RUN npm install
 RUN npm run build
 
-FROM node:12-alpine
+FROM node:14.17-alpine
 ENV NODE_ENV production
 WORKDIR /usr/src/app
 COPY --from=build /usr/src/app/dist ./
