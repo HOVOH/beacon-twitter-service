@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { EnvironmentService } from "@hovoh/nestjs-environment-module";
 import { IEnv } from "../../app.module";
 import { HttpClient } from "../../http/http-client";
@@ -16,8 +16,10 @@ const RATE_LIMIT_WINDOW = 900000;
 @Injectable()
 export class TwitterApi {
 
+  static readonly NAME = "TwitterApi";
   fetchClient: HttpClient;
   followRateLimiter: RateLimiter;
+  logger = new Logger(TwitterApi.NAME);
 
   constructor({ env }: EnvironmentService<IEnv>) {
     this.fetchClient = new HttpClient(
@@ -76,7 +78,7 @@ export class TwitterApi {
     return iTweets;
   }
 
-  getFollowings(id: string, limit = 1000) {
+  getFollowings(id: string, limit = 10000) {
     const paginationScroller = new PaginationScroller<IUser>(
       this.fetchClient,
       this.followRateLimiter,
@@ -86,6 +88,7 @@ export class TwitterApi {
       "max_results": limit,
     }
     paginationScroller.setParams(`2/users/${id}/following`,query)
+    paginationScroller.onRateLimit(() => this.logger.log("Following endpoint has reach rate limit"))
     return paginationScroller;
   }
 

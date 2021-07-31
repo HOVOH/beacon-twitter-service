@@ -18,7 +18,7 @@ export class Optional<T>{
   }
 
   getOrDefault(def: T){
-    return !!this.value?this.value: def;
+    return this.value?this.value: def;
   }
 
   isEmpty(){
@@ -64,25 +64,29 @@ export class TimeSeries<T>{
   @Column()
   values: T[]
 
-  length = 0;
-
   constructor() {
     this.time = [];
     this.values = [];
   }
 
+  get length() {
+    return this.values.length;
+  }
+
+  isEmpty() {
+    return this.length === 0;
+  }
+
   add(date: Date, value: T){
     this.time.push(date);
     this.values.push(value);
-    this.length += 1;
   }
 
   last():OptionalPair<Date, T>{
     if (this.time.length === 0){
-      return new OptionalPair<Date, T>(null);
+      return new OptionalPair<Date, T>(new Pair<Date, T>(null, null));
     }
     const pair = new Pair<Date, T>(this.time[this.length-1], this.values[this.length-1]);
     return new OptionalPair(pair);
   }
-
 }

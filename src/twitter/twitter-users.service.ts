@@ -130,7 +130,6 @@ export class TwitterUsersService{
 
   async getFollowing(user: TwitterUser): Promise<TwitterUser[]>{
     const paginationScroller = this.twitterApi.getFollowings(user.userId);
-    paginationScroller.onRateLimit(() => console.log("Getting rate limited"));
     const following = await paginationScroller.get();
     return following.map(iUser => TwitterUser.fromIUser(iUser));
   }

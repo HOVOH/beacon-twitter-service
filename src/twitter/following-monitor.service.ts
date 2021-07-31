@@ -43,43 +43,42 @@ export class FollowingMonitorService implements OnModuleInit{
   }
 
   async run(){
-    if (this.queue.length == 0) return;
-    const user = this.queue.shift();
-    console.log(`${user.username} is following ${user.publicMetrics.followingCount}`)
+    if (this.queue.length == 0) {
+      this.stop();
+      return;
+    }
+    let user = this.queue.shift();
+    console.log(`${user.username} is following ${user.publicMetrics.followingCount} users`)
     try {
       const following = await this.twitterUsersService.getFollowing(user);
       const followingTids = following.map(following => following.userId);
-      const startedFollowingTids = followingTids.filter(id => !user.followingTids.includes(id));
-      const stoppedFollowingTids = user.followingTids.filter(id => !followingTids.includes(id));
-
+      let startedFollowingTids = followingTids;
+      let stoppedFollowingTids = [];
+      if (user.followingTids){
+        startedFollowingTids = followingTids.filter(id => !user.followingTids.includes(id));
+        stoppedFollowingTids = user.followingTids.filter(id => !followingTids.includes(id));
+      }
       if (stoppedFollowingTids.length > 0 || startedFollowingTids.length > 0) {
         user.followingTids = followingTids;
         user.followingTidsHistory.add(new Date(), {
           add: startedFollowingTids,
           removed: stoppedFollowingTids
         });
+        user = await this.twitterUsersService.save(user);
+        const startedFollowing = await Promise.all(startedFollowingTids
+          .map(tid => following.find(user => user.userId === tid))
+          .map(user => this.twitterUsersService.mergeWithRecords(user)));
+        const stoppedFollowing = await Promise.all(stoppedFollowingTids
+          .map(id => following.find(user => user.userId === id))
+          .map(user => this.twitterUsersService.mergeWithRecords(user)));
+        this.eventService.emit(new NewFollowingEvent(user, startedFollowing, stoppedFollowing))
       }
-      this.queue.push(await this.twitterUsersService.save(user));
-      const startedFollowing = await Promise.all(startedFollowingTids
-        .map(tid => following.find(user => user.userId === tid))
-        .map(user => this.twitterUsersService.mergeWithRecords(user)));
-      const stoppedFollowing = await Promise.all(stoppedFollowingTids
-        .map(id => following.find(user => user.userId === id))
-        .map(user => this.twitterUsersService.mergeWithRecords(user)));
-      this.eventService.emit(new NewFollowingEvent(user, startedFollowing, stoppedFollowing))
+      this.queue.push(user);
       this.next();
     } catch (error) {
-
-      if (error.status){
-        const response = error as Response;
-        this.logger.error(response.statusText);
-        if (response.status === 429){
-          this.queue.unshift(user);
-          setTimeout(() => this.next(),900000)
-        }
-      } else {
-        this.logger.error(error.message);
-      }
+      this.logger.error(error.message);
+      console.log(error.stack)
+      this.next();
     }
   }
 

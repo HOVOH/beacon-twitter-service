@@ -1,6 +1,6 @@
 import { twitterUserFactory } from "./factories/twitter-user.factory";
 import { ID_ARE_NOT_EQUAL } from "../errors.code";
-import { UserPublicMetrics } from "./user-public-metrics.entity";
+import { UserPublicMetrics, userPublicMetricsFactory } from "./user-public-metrics.entity";
 import { iTwitterUserFactory } from "../api/user";
 import { TwitterUser } from "./twitter-user.entity";
 
@@ -77,5 +77,12 @@ describe("TwitterUser", () => {
     expect(user0.nameHistory.length).toEqual(0);
     expect(user0.pinnedTweetHistory.length).toEqual(0);
     expect(user0.publicMetricsHistory.length).toEqual(0);
+  })
+
+  it("publicMetrics() should return last in history", () => {
+    const user = twitterUserFactory();
+    const metrics = userPublicMetricsFactory();
+    user.updatePublicMetrics(metrics);
+    expect(user.publicMetrics.followerCount).toEqual(metrics.followerCount);
   })
 })

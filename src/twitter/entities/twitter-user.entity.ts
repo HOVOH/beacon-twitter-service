@@ -58,7 +58,7 @@ export class TwitterUser extends HasTags implements IUpdatable<TwitterUser>{
   followingTids: string[]
 
   @Column()
-  followingTidsHistory: TimeSeries<{
+  _followingTidsHistory: TimeSeries<{
     add: string[],
     removed: string[]
   }>
@@ -105,6 +105,13 @@ export class TwitterUser extends HasTags implements IUpdatable<TwitterUser>{
 
   get publicMetricsHistory(){
     return this._metricsHistory;
+  }
+
+  get followingTidsHistory(){
+    if (!this._followingTidsHistory){
+      this._followingTidsHistory = new TimeSeries<{add: string[]; removed: string[]}>();
+    }
+    return this._followingTidsHistory;
   }
 
   updateName(name: string){
@@ -154,10 +161,11 @@ export class TwitterUser extends HasTags implements IUpdatable<TwitterUser>{
     if (newVersion.name && this.name !== newVersion.name){
       this.updateName(newVersion.name);
     }
-    if (newVersion.pinnedTweet && this.pinnedTweet.tweetId !== newVersion.pinnedTweet.tweetId){
+    if (this.pinnedTweet?.tweetId !== newVersion.pinnedTweet?.tweetId){
       this.updatePinnedTweet(newVersion.pinnedTweet);
     }
-    if ((!this.publicMetrics && newVersion.publicMetrics)||(newVersion.publicMetrics && !UserPublicMetrics.equal(this.publicMetrics, newVersion.publicMetrics))){
+    if ((!this.publicMetrics && newVersion.publicMetrics)||
+      (newVersion.publicMetrics && !UserPublicMetrics.equal(this.publicMetrics, newVersion.publicMetrics))){
       this.updatePublicMetrics(newVersion.publicMetrics);
     }
     this.addTags(...newVersion.tags);
