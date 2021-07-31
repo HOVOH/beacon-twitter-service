@@ -1,4 +1,4 @@
-FROM node:14 AS build
+FROM node:14.17 AS build
 WORKDIR /usr/src/app
 COPY ./ ./
 RUN npm install
