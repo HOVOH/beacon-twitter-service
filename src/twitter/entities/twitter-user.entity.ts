@@ -57,7 +57,7 @@ export class TwitterUser extends HasTags implements IUpdatable<TwitterUser>{
   @Column()
   followingTids: string[]
 
-  @Column()
+  @Column(type => TimeSeries)
   _followingTidsHistory: TimeSeries<{
     add: string[],
     removed: string[]
@@ -69,6 +69,7 @@ export class TwitterUser extends HasTags implements IUpdatable<TwitterUser>{
     this._descriptionHistory = new TimeSeries<string>();
     this._pinnedTweet = new TimeSeries<Tweet | {tweetId: string}>();
     this._metricsHistory = new TimeSeries<UserPublicMetrics>();
+    this._followingTidsHistory = new TimeSeries<{add: string[]; removed: string[]}>();
   }
 
   @Expose()
