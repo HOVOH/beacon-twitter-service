@@ -10,5 +10,5 @@ WORKDIR /usr/src/app
 COPY --from=build /usr/src/app/dist ./
 COPY --from=build /usr/src/app/node_modules ./node_modules
 EXPOSE 3000
-ENTRYPOINT ["node", "main.js"]
+ENTRYPOINT ["node", "--harmony", "main.js"]
 
