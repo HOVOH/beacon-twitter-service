@@ -76,7 +76,7 @@ export class FollowingMonitorService implements OnModuleInit{
       this.queue.push(user);
       this.next();
     } catch (error) {
-      this.logger.error(error.message);
+      this.logger.error(error.message??error.statusMessage);
       console.log(error.stack)
       this.next();
     }

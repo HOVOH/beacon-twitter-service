@@ -44,7 +44,7 @@ export class TweetsService {
       where: {
         "meta.score":{ $gt: minScore}
       }
-    })).addIf(filter.withTags.length > 0, () => ({
+    })).addIf(filter.withTags && filter.withTags.length > 0, () => ({
       where: {
         "meta._tags": {$in: filter.withTags}
       }

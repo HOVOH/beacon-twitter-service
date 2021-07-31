@@ -78,7 +78,7 @@ export class TwitterApi {
     return iTweets;
   }
 
-  getFollowings(id: string, limit = 10000) {
+  getFollowings(id: string, limit = 1000) {
     const paginationScroller = new PaginationScroller<IUser>(
       this.fetchClient,
       this.followRateLimiter,
