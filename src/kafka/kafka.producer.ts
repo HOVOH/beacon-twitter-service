@@ -28,7 +28,6 @@ export class KafkaProducer implements OnModuleInit, OnModuleDestroy{
 
   @OnEvent(NewFollowingEvent.NAME)
   async handleNewFollowingTweetEvent(event: NewFollowingEvent){
-    console.log("New follow event");
     await this.producer.send({
       topic: "twitter.user.following",
       messages: [

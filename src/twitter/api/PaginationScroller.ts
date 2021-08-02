@@ -14,6 +14,7 @@ export class PaginationScroller<T> {
   private readonly buffer: T[];
   private query: any;
   private path: string;
+  private maxBufferSize: number = null;
 
   constructor(private fetchClient: HttpClient,
               private rateLimiter: RateLimiter,
@@ -22,11 +23,28 @@ export class PaginationScroller<T> {
     this.eventEmitter.on(NEXT_EVENT, () => this.exec());
     this.eventEmitter.on(RATE_LIMITED_EVENT, () => this.waitRateLimitRefresh());
     this.buffer = [];
+    this.query = {};
   }
 
   setParams(path:string, query: any){
     this.path = path;
     this.query = query;
+    return this;
+  }
+
+  setPath(path: string){
+    this.path = path;
+    return this;
+  }
+
+  setQuery(query: any){
+    this.query = query;
+    return this;
+  }
+
+  setMaxBufferSize(size: number){
+    this.maxBufferSize = size;
+    return this;
   }
 
   get(){
@@ -53,7 +71,7 @@ export class PaginationScroller<T> {
       if (response.meta.result_count > 0){
         this.buffer.push(...response.data);
       }
-      if (response.meta.next_token){
+      if (response.meta.next_token && (!this.maxBufferSize || this.maxBufferSize < this.buffer.length)){
         this.query.pagination_token = response.meta.next_token;
         this.eventEmitter.emit(NEXT_EVENT, response.data);
       } else {
@@ -82,13 +100,16 @@ export class PaginationScroller<T> {
 
   onRateLimit(fn: () => void){
     this.eventEmitter.on(RATE_LIMITED_EVENT, fn);
+    return this;
   }
 
   onNextPage(fn: (lastPage?:T[]) => void){
     this.eventEmitter.on(NEXT_EVENT, fn);
+    return this;
   }
 
   onDone(fn: (buffer: T[]) => void) {
     this.eventEmitter.on(DONE_EVENT, fn);
+    return this;
   }
 }

@@ -19,6 +19,7 @@ export class TwitterApi {
   static readonly NAME = "TwitterApi";
   fetchClient: HttpClient;
   followRateLimiter: RateLimiter;
+  tweetTimelineRateLimiter: RateLimiter;
   logger = new Logger(TwitterApi.NAME);
 
   constructor({ env }: EnvironmentService<IEnv>) {
@@ -28,6 +29,11 @@ export class TwitterApi {
     );
     this.followRateLimiter = new RateLimiter({
       tokensPerInterval: 15,
+      interval: RATE_LIMIT_WINDOW,
+      fireImmediately: true,
+    })
+    this.tweetTimelineRateLimiter = new RateLimiter({
+      tokensPerInterval: 1500,
       interval: RATE_LIMIT_WINDOW,
       fireImmediately: true,
     })
@@ -54,28 +60,17 @@ export class TwitterApi {
     return response.data;
   }
 
-  //
-  // https://api.twitter.com/2/users/:id/tweets?tweet.fields=created_at&expansions=author_id&user.fields=created_at&max_results=5
-  //
-  async getUsersTweetsHistory(id: string, startTime?: Date, endTime?: Date, limit = 100, maxNumber = 1000): Promise<ITweet[]>{
-    const iTweets: ITweet[] = [];
-    let hasNext = true;
-    const query: any = {
+  getUsersTweetsHistory(id: string, query?: {"tweet.fields"?: string, since_id?: string}, maxNumber = 1000): Promise<ITweet[]>{
+    const paginationScroller = new PaginationScroller<ITweet>(this.fetchClient, this.tweetTimelineRateLimiter, 900);
+    query = Object.assign({
       "tweet.fields": FULL_TWEET_FIELDS,
-      "max_results": limit,
-    }
-    for (let page = 0; hasNext && page * limit < maxNumber; page+=1){
-      const response: IPaginatedResponse<ITweet[]> = await this.fetchClient.get(`2/users/${id}/tweets?`, query)
-      if (response.meta.result_count > 0){
-        iTweets.push(...response.data);
-      }
-      if (response.meta.next_token){
-        query.pagination_token = response.meta.next_token
-      } else {
-        hasNext = false;
-      }
-    }
-    return iTweets;
+      "max_results": 100,
+    }, query)
+    paginationScroller.setPath(`2/users/${id}/tweets`)
+      .setQuery(query)
+      .setMaxBufferSize(maxNumber)
+      .onRateLimit(() => this.logger.log("User timeline endpoint has reach rate limit"));
+    return paginationScroller.get();
   }
 
   getFollowings(id: string, limit = 1000) {
@@ -87,8 +82,9 @@ export class TwitterApi {
     const query: any = {
       "max_results": limit,
     }
-    paginationScroller.setParams(`2/users/${id}/following`,query)
-    paginationScroller.onRateLimit(() => this.logger.log("Following endpoint has reach rate limit"))
+    paginationScroller.setPath(`2/users/${id}/following`)
+      .setQuery(query)
+      .onRateLimit(() => this.logger.log("Following endpoint has reach rate limit"))
     return paginationScroller;
   }
 

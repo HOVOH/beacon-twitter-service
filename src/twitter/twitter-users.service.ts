@@ -19,6 +19,7 @@ import { TagTweetPipe } from "../pipeline/TagTweetPipe";
 import { IMPORTED_TAG } from "./tags";
 import { keySetFilter, KeysetPage, MongoQueryBuilder } from "@hovoh/nestjs-api-lib";
 import { ObjectId } from "mongodb";
+import { DateTime } from "luxon";
 
 const ID_FIELD = "id";
 
@@ -132,6 +133,15 @@ export class TwitterUsersService{
     const paginationScroller = this.twitterApi.getFollowings(user.userId);
     const following = await paginationScroller.get();
     return following.map(iUser => TwitterUser.fromIUser(iUser));
+  }
+
+  purgeUselessUser(){
+    return this.twitterUsersRepo.delete({
+      foundAt: {
+        $lt: DateTime.now().minus({day: 7}).toJSDate()
+      } as any,
+
+    })
   }
 
   async query(filter: UserQuery, page?: KeysetPage<"id">){

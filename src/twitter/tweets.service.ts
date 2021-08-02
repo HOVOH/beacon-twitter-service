@@ -4,6 +4,8 @@ import { Tweet } from "./entities/tweet.entity";
 import { MongoRepository } from "typeorm";
 import { keySetFilter, KeysetPage, MongoQueryBuilder } from "@hovoh/nestjs-api-lib";
 import {ObjectId} from 'mongodb';
+import { TwitterUser } from "./entities/twitter-user.entity";
+import { TwitterApi } from "./api/twitter-api.service";
 
 export interface TweetQuery{
   minScore?: number,
@@ -11,7 +13,8 @@ export interface TweetQuery{
   ids?: string[],
   hasTopics?: string[],
   noTopicsLabelled?: boolean,
-  isLabelled: boolean,
+  isLabelled?: boolean,
+  authorId?: string,
 }
 
 const CREATED_AT_FIELD = "createdAt";
@@ -27,7 +30,9 @@ export type TweetsOrderBy = typeof orderableMembers[number];
 @Injectable()
 export class TweetsService {
 
-  constructor(@InjectRepository(Tweet) private tweetsRepository: MongoRepository<Tweet>) {
+  constructor(@InjectRepository(Tweet)
+              private tweetsRepository: MongoRepository<Tweet>,
+              private twitterApi: TwitterApi) {
   }
 
   async save(tweet: Tweet): Promise<Tweet>{
@@ -62,7 +67,14 @@ export class TweetsService {
           "meta._topics": { $exists: true }
         }
       }
-    )).add(this.pageToQuery(page))
+    )).addIf(filter.authorId, ()=>(
+      {
+        where: {
+          authorId: filter.authorId
+        }
+      }
+    ))
+      .add(this.pageToQuery(page))
     return this.tweetsRepository.find(builder.query)
   }
 
@@ -80,5 +92,16 @@ export class TweetsService {
 
   async findByTweetId(tweetId: string): Promise<Tweet> {
     return this.tweetsRepository.findOne({tweetId});
+  }
+
+  async fetchLatestTweet(user: TwitterUser){
+    const lastTweets = await this.query({
+      authorId: user.userId
+    }, {
+      orderBy: CREATED_AT_FIELD,
+      size: 1,
+      order: "DES"
+    });
+    return this.twitterApi.getUsersTweetsHistory(user.userId, { since_id: lastTweets?.[0].tweetId})
   }
 }

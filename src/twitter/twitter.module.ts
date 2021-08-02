@@ -14,6 +14,7 @@ import { SaveTweetPipe } from "../pipeline/SaveTweetPipe";
 import { TopicsService } from "./topics.service";
 import { FollowingMonitorService } from "./following-monitor.service";
 import { ScheduleModule } from "@nestjs/schedule";
+import { NewTweetMonitor } from "./new-tweet-monitor.service";
 
 @Module({
   imports: [
@@ -30,7 +31,8 @@ import { ScheduleModule } from "@nestjs/schedule";
     SaveTwitterUserPipe,
     SaveTweetPipe,
     TopicsService,
-    FollowingMonitorService
+    FollowingMonitorService,
+    NewTweetMonitor
   ],
   exports: [TweetsService, TwitterUsersService]
 })

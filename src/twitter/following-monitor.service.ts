@@ -48,7 +48,6 @@ export class FollowingMonitorService implements OnModuleInit{
       return;
     }
     let user = this.queue.shift();
-    console.log(`${user.username} is following ${user.publicMetrics.followingCount} users`)
     try {
       const following = await this.twitterUsersService.getFollowing(user);
       const followingTids = following.map(following => following.userId);

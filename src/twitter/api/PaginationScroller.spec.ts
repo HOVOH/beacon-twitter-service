@@ -82,4 +82,10 @@ describe("PaginationScroller", () => {
     paginationScroller.onRateLimit(() => expect(true).toBe(true));
     expect(await paginationScroller.get()).toEqual(EXPECTED_GET_RESULT);
   })
+
+  it("Should not fetch more items than maxBufferSize", async () => {
+    paginationScroller.setMaxBufferSize(3);
+    const items = await paginationScroller.get();
+    expect(items).toEqual([1,2,3])
+  })
 })
