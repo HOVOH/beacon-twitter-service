@@ -1,8 +1,7 @@
-import { forwardRef, Inject, Injectable } from "@nestjs/common";
-import { EventEmitter2 } from "@nestjs/event-emitter";
+import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { TwitterUser } from "./entities/twitter-user.entity";
-import { ObjectID, Repository } from "typeorm";
+import { ObjectID, MongoRepository } from "typeorm";
 import { isObjectEmpty } from "../utils/utils";
 import { TwitterApi } from "./api/twitter-api.service";
 import { Tweet } from "./entities/tweet.entity";
@@ -19,7 +18,7 @@ import { TagTweetPipe } from "../pipeline/TagTweetPipe";
 import { IMPORTED_TAG } from "./tags";
 import { keySetFilter, KeysetPage, MongoQueryBuilder } from "@hovoh/nestjs-api-lib";
 import { ObjectId } from "mongodb";
-import { DateTime } from "luxon";
+import { ApplicationError } from "@hovoh/nestjs-application-error";
 
 const ID_FIELD = "id";
 
@@ -36,14 +35,13 @@ export interface UserQuery {
 @Injectable()
 export class TwitterUsersService{
 
+  saveTwitterUserPipe: SaveTwitterUserPipe;
   constructor(@InjectRepository(TwitterUser)
-              private twitterUsersRepo: Repository<TwitterUser>,
+              private twitterUsersRepo: MongoRepository<TwitterUser>,
               private twitterApi: TwitterApi,
-              private saveTweetPipe: SaveTweetPipe,
-              @Inject(forwardRef(() => SaveTwitterUserPipe))
-              private saveTwitterUserPipe: SaveTwitterUserPipe
+              private saveTweetPipe: SaveTweetPipe
   ) {
-
+    this.saveTwitterUserPipe = new SaveTwitterUserPipe(this);
   }
 
   lookUpPipeline() {
@@ -80,8 +78,11 @@ export class TwitterUsersService{
   }
 
   save(user: TwitterUser){
-    if (isObjectEmpty(user)) return null;
     return this.twitterUsersRepo.save(user);
+  }
+
+  saveMany(users: TwitterUser[]){
+    return this.twitterUsersRepo.save(users);
   }
 
   async upsert(latest: TwitterUser): Promise<TwitterUser>{
@@ -135,13 +136,22 @@ export class TwitterUsersService{
     return following.map(iUser => TwitterUser.fromIUser(iUser));
   }
 
-  purgeUselessUser(){
-    return this.twitterUsersRepo.delete({
-      foundAt: {
-        $lt: DateTime.now().minus({day: 7}).toJSDate()
-      } as any,
-
-    })
+  delete(query:{
+    tids?: string[],
+    excludeTagged?: boolean|string[]
+  }){
+    const queryBuilder = new MongoQueryBuilder()
+    queryBuilder.addIf(query.tids, ()=>({
+      userId: {$in: query.tids}
+    })).addIf(query.excludeTagged === true, () => ({
+      "_tags.0": {$exists: false}
+    })).addIf(Array.isArray(query.excludeTagged) && query.excludeTagged.length > 0, () => ({
+      "_tags": { $not: { $in: query.excludeTagged}}
+    }))
+    if (isObjectEmpty(queryBuilder.query)){
+      throw new ApplicationError("query_too_broad");
+    }
+    return this.twitterUsersRepo.deleteMany(queryBuilder.query)
   }
 
   async query(filter: UserQuery, page?: KeysetPage<"id">){

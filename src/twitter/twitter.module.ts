@@ -15,6 +15,7 @@ import { TopicsService } from "./topics.service";
 import { FollowingMonitorService } from "./following-monitor.service";
 import { ScheduleModule } from "@nestjs/schedule";
 import { NewTweetMonitor } from "./new-tweet-monitor.service";
+import { SystemPurgeService } from "./system-purge.service";
 
 @Module({
   imports: [
@@ -32,7 +33,8 @@ import { NewTweetMonitor } from "./new-tweet-monitor.service";
     SaveTweetPipe,
     TopicsService,
     FollowingMonitorService,
-    NewTweetMonitor
+    NewTweetMonitor,
+    SystemPurgeService
   ],
   exports: [TweetsService, TwitterUsersService]
 })

@@ -26,6 +26,7 @@ export interface IEnv {
   TWEET_ANALYSIS_URL: string;
   ENABLE_TWEET_SAMPLING: string;
   KAFKA_BROKERS: string;
+  NODE_ENV;
 }
 
 @Module({

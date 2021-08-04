@@ -6,6 +6,7 @@ import { keySetFilter, KeysetPage, MongoQueryBuilder } from "@hovoh/nestjs-api-l
 import {ObjectId} from 'mongodb';
 import { TwitterUser } from "./entities/twitter-user.entity";
 import { TwitterApi } from "./api/twitter-api.service";
+import { DateTime } from "luxon";
 
 export interface TweetQuery{
   minScore?: number,
@@ -73,8 +74,7 @@ export class TweetsService {
           authorId: filter.authorId
         }
       }
-    ))
-      .add(this.pageToQuery(page))
+    )).add(this.pageToQuery(page))
     return this.tweetsRepository.find(builder.query)
   }
 
@@ -103,5 +103,17 @@ export class TweetsService {
       order: "DES"
     });
     return this.twitterApi.getUsersTweetsHistory(user.userId, { since_id: lastTweets?.[0].tweetId})
+  }
+
+  async purgeUselessTweets() {
+    return await this.tweetsRepository.deleteMany({
+      foundAt: {$lt: DateTime.now().minus({day: 7}).toJSDate()},
+      "meta._topics": {$exists: false},
+      "meta._tags.0": {$exists: false}
+    })
+  }
+
+  getDisctinctAuthorTids(): Promise<string[]>{
+    return this.tweetsRepository.distinct("authorId", {});
   }
 }
