@@ -9,6 +9,7 @@ import { getRepositoryToken, TypeOrmModule } from "@nestjs/typeorm";
 import { tweetFactory } from "../src/twitter/entities/factories/tweet.factory";
 import { DateTime } from "luxon";
 import { INestApplication } from "@nestjs/common";
+import { reportTranspileErrors } from "ts-loader/dist/instances";
 
 describe("TweetsService", () => {
   let app: INestApplication;
@@ -32,6 +33,71 @@ describe("TweetsService", () => {
     await app.init();
   })
 
+  it("delete() should throw an error to avoid deleting everything", async () => {
+    expect.assertions(1);
+    try{
+      await service.delete({includeTagged: true, includeLabelled: true});
+    } catch (error) {
+      expect(error.isApplicationError).toBe(true);
+    }
+  })
+
+  it("delete() should delete only authorId", async ()=> {
+    const [ tweet0, tweet1, tweet2] = await tweetsRepo.save([tweetFactory(), tweetFactory(), tweetFactory()]);
+    await service.delete({authorsTids: [tweet0.authorId]});
+    const tweets = await tweetsRepo.find();
+    expect(tweets.map(tweet => tweet.id).sort()).toEqual([tweet1.id, tweet2.id].sort());
+  })
+
+  it("delete() should not delete tagged or labelled tweets by default", async () => {
+    const labelledTweet = tweetFactory();
+    labelledTweet.meta.addTopic("user_id",["test"]);
+    const taggedTweet = tweetFactory();
+    taggedTweet.meta.addTags("test");
+    await service.saveMany([tweetFactory(), labelledTweet, taggedTweet]);
+    await service.delete({});
+    const tweets = await tweetsRepo.find();
+    expect(tweets.map(tweet => tweet.id).sort()).toEqual([labelledTweet.id, taggedTweet.id].sort());
+  })
+
+  it("delete() should delete labelled", async () => {
+    const labelledTweet = tweetFactory();
+    labelledTweet.meta.addTopic("user_id",["test"]);
+    const taggedTweet = tweetFactory();
+    taggedTweet.meta.addTags("test");
+    await service.saveMany([tweetFactory(), labelledTweet, taggedTweet]);
+    await service.delete({includeLabelled: true});
+    const tweets = await tweetsRepo.find();
+    expect(tweets.map(tweet => tweet.id)).toEqual([taggedTweet.id]);
+  })
+
+  it("delete() should delete tagged", async () => {
+    const labelledTweet = tweetFactory();
+    labelledTweet.meta.addTopic("user_id",["test"]);
+    const taggedTweet = tweetFactory();
+    taggedTweet.meta.addTags("test");
+    await service.saveMany([tweetFactory(), labelledTweet, taggedTweet]);
+    await service.delete({includeTagged: true});
+    const tweets = await tweetsRepo.find();
+    expect(tweets.map(tweet => tweet.id)).toEqual([labelledTweet.id]);
+  })
+
+  it("delete() should delete tweets older than value", async () =>{
+    const [ tweet0, tweet1, tweet2] = await tweetsRepo.save([tweetFactory(), tweetFactory(), tweetFactory()]);
+    const expiredDate = DateTime.now().minus({day: 8}).toJSDate();
+    await tweetsRepo.update(
+      { tweetId: tweet0.tweetId},
+      { foundAt: expiredDate });
+    await tweetsRepo.update(
+      { tweetId: tweet2.tweetId },
+      { foundAt: expiredDate });
+    await service.delete({foundBefore: DateTime.now().minus({day: 7}).toJSDate()});
+    const tweetsLeft = await tweetsRepo.find({});
+    expect(tweet0.meta.tags).toEqual([]);
+    expect(tweet0.meta.topics)
+    expect(tweetsLeft).toEqual([tweet1]);
+  })
+
   it("Should purge tweets older than a week", async () => {
     const [ tweet0, tweet1, tweet2] = await tweetsRepo.save([tweetFactory(), tweetFactory(), tweetFactory()]);
     const expiredDate = DateTime.now().minus({day: 8}).toJSDate();
@@ -43,6 +109,8 @@ describe("TweetsService", () => {
       { foundAt: expiredDate });
     await service.purgeUselessTweets();
     const tweetsLeft = await tweetsRepo.find({});
+    expect(tweet0.meta.tags).toEqual([]);
+    expect(tweet0.meta.topics)
     expect(tweetsLeft).toEqual([tweet1]);
   })
 
@@ -95,7 +163,7 @@ describe("TweetsService", () => {
     expect(authorIds.sort()).toEqual([tweet0.authorId, tweet1.authorId].sort());
   })
 
-  afterEach(async() => await tweetsRepo.clear());
+  afterEach(async() => await tweetsRepo.clear().catch(() => {}));
 
   afterAll(async () => {
     await app.close();

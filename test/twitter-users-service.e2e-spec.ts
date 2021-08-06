@@ -57,7 +57,7 @@ describe("TwitterUsers service", () => {
     expect.assertions(2);
     const user0 = await usersService.save(twitterUserFactory());
     try {
-      await usersService.delete({})
+      await usersService.delete({includeTagged: true})
     } catch (error){
       expect(error.isApplicationError).toBe(true)
       expect(await userRepo.find()).toEqual([user0]);
@@ -68,10 +68,19 @@ describe("TwitterUsers service", () => {
     const user0 = twitterUserFactory();
     user0.addTags("test");
     await usersService.saveMany([twitterUserFactory(), user0]);
-    await usersService.delete({excludeTagged: true});
+    await usersService.delete();
     const users = await userRepo.find();
     expect(users.length).toEqual(1);
     expect(users[0].tags).toEqual(user0.tags)
+  })
+
+  it("delete() should delete everything ", async () => {
+    const user0 = twitterUserFactory();
+    user0.addTags("test");
+    await usersService.saveMany([user0]);
+    await usersService.delete({tids: [user0.userId], includeTagged: true});
+    const users = await userRepo.find();
+    expect(users.length).toEqual(0);
   })
 
   it("delete() should delete everything except users with specified tags", async () => {
@@ -80,10 +89,10 @@ describe("TwitterUsers service", () => {
     const user1 = twitterUserFactory();
     user1.addTags("delete");
     await usersService.saveMany([user0, user1, twitterUserFactory()]);
-    await usersService.delete({excludeTagged: ["test"]});
+    await usersService.delete({withTags: ["test"]});
     const users = await userRepo.find();
-    expect(users.length).toEqual(1);
-    expect(users[0].tags).toEqual(user0.tags)
+    expect(users.length).toEqual(2);
+    expect(users[0].tags).toEqual(user1.tags)
   })
 
   afterAll(() => app.close());

@@ -7,6 +7,8 @@ import {ObjectId} from 'mongodb';
 import { TwitterUser } from "./entities/twitter-user.entity";
 import { TwitterApi } from "./api/twitter-api.service";
 import { DateTime } from "luxon";
+import { isObjectEmpty } from "../utils/utils";
+import { ApplicationError } from "@hovoh/nestjs-application-error";
 
 export interface TweetQuery{
   minScore?: number,
@@ -106,11 +108,31 @@ export class TweetsService {
   }
 
   async purgeUselessTweets() {
-    return await this.tweetsRepository.deleteMany({
-      foundAt: {$lt: DateTime.now().minus({day: 7}).toJSDate()},
-      "meta._topics": {$exists: false},
-      "meta._tags.0": {$exists: false}
+    return await this.delete({
+       foundBefore: DateTime.now().minus({day: 7}).toJSDate()
     })
+  }
+
+  async delete(query: {
+    authorsTids?: string[],
+    includeTagged?: boolean,
+    includeLabelled?: true,
+    foundBefore?: Date
+  }){
+    const queryBuilder= new MongoQueryBuilder();
+    queryBuilder.addIf(Array.isArray(query.authorsTids) && query.authorsTids.length > 0, ()=>({
+      authorId: {$in: query.authorsTids}
+    })).addIf(!query.includeTagged, () => ({
+      "meta._tags.0": {$exists: false}
+    })).addIf(!query.includeLabelled, () => ({
+      "meta._topics": {$exists: false}
+    })).addIf(Boolean(query.foundBefore), ()=> ({
+      foundAt: { $lt: query.foundBefore },
+    }))
+    if (isObjectEmpty(queryBuilder.query)){
+      throw new ApplicationError("query_too_broad");
+    }
+    return this.tweetsRepository.deleteMany(queryBuilder.query);
   }
 
   getDisctinctAuthorTids(): Promise<string[]>{

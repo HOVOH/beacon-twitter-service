@@ -138,15 +138,16 @@ export class TwitterUsersService{
 
   delete(query:{
     tids?: string[],
-    excludeTagged?: boolean|string[]
-  }){
+    includeTagged?: boolean,
+    withTags?: string[]
+  } = {}){
     const queryBuilder = new MongoQueryBuilder()
     queryBuilder.addIf(query.tids, ()=>({
       userId: {$in: query.tids}
-    })).addIf(query.excludeTagged === true, () => ({
+    })).addIf(!query.includeTagged && !query.withTags,() => ({
       "_tags.0": {$exists: false}
-    })).addIf(Array.isArray(query.excludeTagged) && query.excludeTagged.length > 0, () => ({
-      "_tags": { $not: { $in: query.excludeTagged}}
+    })).addIf(Array.isArray(query.withTags) && query.withTags.length > 0, () => ({
+      "_tags": { $in: query.withTags}
     }))
     if (isObjectEmpty(queryBuilder.query)){
       throw new ApplicationError("query_too_broad");
