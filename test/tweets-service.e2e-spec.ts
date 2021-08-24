@@ -10,6 +10,7 @@ import { tweetFactory } from "../src/twitter/entities/factories/tweet.factory";
 import { DateTime } from "luxon";
 import { INestApplication } from "@nestjs/common";
 import { reportTranspileErrors } from "ts-loader/dist/instances";
+import { TwitterUser } from "../src/twitter/entities/twitter-user.entity";
 
 describe("TweetsService", () => {
   let app: INestApplication;
@@ -161,6 +162,29 @@ describe("TweetsService", () => {
     await tweetsRepo.save([tweet0, tweet1, tweet2]);
     const authorIds = await service.getDisctinctAuthorTids();
     expect(authorIds.sort()).toEqual([tweet0.authorId, tweet1.authorId].sort());
+  })
+
+  it("query() should return tweets with the authorId", async () => {
+    const [tweet0, tweet1] = await service.saveMany([tweetFactory(), tweetFactory()]);
+    const tweets = await service.query({authorId: tweet0.authorId});
+    expect(tweets.length).toEqual(1);
+    expect(tweets[0].authorId).toEqual(tweet0.authorId);
+
+  })
+
+  it("fetchLatestTweet() should return latest tweet", async () => {
+    const tweet0 = tweetFactory({createdAt: DateTime.now().minus({day:1}).toJSDate()});
+    const tweet1 = tweetFactory();
+    const tweet2 = tweetFactory({authorId: tweet0.authorId});
+    await service.saveMany([tweet0, tweet1, tweet2]);
+    const lastTweet = await service.query({
+      authorId: tweet0.authorId
+    }, {
+      orderBy: "createdAt",
+      size: 1,
+      order: "DES"
+    });
+    expect(lastTweet[0].tweetId).toBe(tweet2.tweetId);
   })
 
   afterEach(async() => await tweetsRepo.clear().catch(() => {}));

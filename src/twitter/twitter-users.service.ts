@@ -5,7 +5,7 @@ import { ObjectID, MongoRepository } from "typeorm";
 import { isObjectEmpty } from "../utils/utils";
 import { TwitterApi } from "./api/twitter-api.service";
 import { Tweet } from "./entities/tweet.entity";
-import { BatchPipeline, ProcessingPipe } from "@hovoh/ts-data-pipeline";
+import { PipelineFactory } from "@hovoh/ts-data-pipeline";
 import { ITweet } from "./api/tweet";
 import { RawTweetPipe } from "../pipeline/RawTweetPipe";
 import { LanguageRule } from "../pipeline/LanguageRule";
@@ -45,31 +45,48 @@ export class TwitterUsersService{
   }
 
   lookUpPipeline() {
-    return new BatchPipeline<IUser, TwitterUser>([
-      new RawTwitterUserPipe(),
-      this.saveTwitterUserPipe
-    ]);
+    return new PipelineFactory<IUser, TwitterUser>([
+      {
+        name: "cast",
+        pipe: new RawTwitterUserPipe()
+      },{
+        name: "save",
+        pipe: this.saveTwitterUserPipe
+      }
+    ], 0);
   }
 
   tweetsImportPipelineFactory () {
-    return new BatchPipeline<ITweet, Tweet>([
-      new RawTweetPipe(),
-      new ProcessingPipe<Tweet>(0, [
-        new LanguageRule()
-        //topicsRule
-      ]),
-      new TagTweetPipe([IMPORTED_TAG]),
-      this.saveTweetPipe
-    ]);
-
+    return new PipelineFactory<ITweet, Tweet>([
+      {
+        name: "cast",
+        pipe: new RawTweetPipe() ,
+      },{
+        name: "lang",
+        pipe: new LanguageRule(),
+      }, {
+        name: "tag",
+        pipe: new TagTweetPipe([IMPORTED_TAG]),
+      }, {
+        name: "save",
+        pipe: this.saveTweetPipe,
+      }
+    ], 0);
   }
 
   twitterUsersImportPipelineFactory () {
-    return new BatchPipeline<IUser, TwitterUser>([
-      new RawTwitterUserPipe(),
-      new TagTwitterUserPipe([IMPORTED_TAG]),
-      this.saveTwitterUserPipe,
-    ])
+    return new PipelineFactory<IUser, TwitterUser>([
+      {
+        name: "cast",
+        pipe: new RawTwitterUserPipe(),
+      }, {
+        name: "tag",
+        pipe: new TagTwitterUserPipe([IMPORTED_TAG]),
+      }, {
+        name: "save",
+        pipe: this.saveTwitterUserPipe,
+      }
+    ], 0)
   }
 
   findOne(user: Partial<TwitterUser>){

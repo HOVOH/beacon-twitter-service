@@ -34,7 +34,7 @@ export type TweetsOrderBy = typeof orderableMembers[number];
 export class TweetsService {
 
   constructor(@InjectRepository(Tweet)
-              private tweetsRepository: MongoRepository<Tweet>,
+              public tweetsRepository: MongoRepository<Tweet>,
               private twitterApi: TwitterApi) {
   }
 
@@ -48,17 +48,17 @@ export class TweetsService {
 
   async query(filter: TweetQuery, page?: KeysetPage<TweetsOrderBy>){
     const builder = new MongoQueryBuilder()
-    builder.addIf(filter.minScore, (minScore) => ({
+    builder.addIf(filter.minScore, () => ({
       where: {
-        "meta.score":{ $gt: minScore}
+        "meta.score":{ $gt: filter.minScore}
       }
     })).addIf(filter.withTags && filter.withTags.length > 0, () => ({
       where: {
         "meta._tags": {$in: filter.withTags}
       }
-    })).addIf(filter.ids, (ids) => ({
+    })).addIf(filter.ids, () => ({
       where: {
-        "tweetId": {$in: ids}
+        "tweetId": {$in: filter.ids}
       }
     })).addIf(filter.noTopicsLabelled, () => ({
       where: {
@@ -76,7 +76,7 @@ export class TweetsService {
           authorId: filter.authorId
         }
       }
-    )).add(this.pageToQuery(page))
+    )).addIf(page, () => this.pageToQuery(page))
     return this.tweetsRepository.find(builder.query)
   }
 
@@ -104,7 +104,15 @@ export class TweetsService {
       size: 1,
       order: "DES"
     });
-    return this.twitterApi.getUsersTweetsHistory(user.userId, { since_id: lastTweets?.[0].tweetId})
+    if (lastTweets.length > 0){
+      return this.twitterApi.getUsersTweetsHistory(
+        user.userId, {
+          since_id: lastTweets[0].tweetId
+        })
+    } else {
+      console.log("No latest tweet for authorId", user.userId);
+      return this.twitterApi.getUsersTweetsHistory(user.userId);
+    }
   }
 
   async purgeUselessTweets() {

@@ -21,7 +21,7 @@ export class SystemPurgeService {
   @Cron('0 0 0 * * *')
   async purgeUsers(){
     const authors = await this.tweetsService.getDisctinctAuthorTids();
-    await this.twitterUsers.delete({tids: authors, excludeTagged: true});
+    await this.twitterUsers.delete({tids: authors});
     this.logger.log("Purged users");
   }
 }

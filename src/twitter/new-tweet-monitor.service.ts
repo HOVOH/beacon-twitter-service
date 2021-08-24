@@ -4,8 +4,7 @@ import { TwitterUsersService } from "./twitter-users.service";
 import { TwitterUser } from "./entities/twitter-user.entity";
 import { IMPORTED_TAG } from "./tags";
 import { TweetsService } from "./tweets.service";
-import { BatchPipeline, JsonParserPipe, MapPipe, ProcessingPipe } from "@hovoh/ts-data-pipeline";
-import { ITweetSample } from "./api/tweet-sample";
+import { PipelineFactory } from "@hovoh/ts-data-pipeline";
 import { ITweet } from "./api/tweet";
 import { Tweet } from "./entities/tweet.entity";
 import { RawTweetPipe } from "../pipeline/RawTweetPipe";
@@ -16,6 +15,8 @@ import { EnvironmentService } from "@hovoh/nestjs-environment-module";
 import { IEnv } from "../app.module";
 import { EventService } from "../events/event.service";
 import { NewTweetEvent } from "./events/new-tweet.event";
+import { ITweetSample } from "./api/tweet-sample";
+import { TagTweetPipe } from "../pipeline/TagTweetPipe";
 
 const NEXT_EVENT = "next";
 
@@ -27,6 +28,7 @@ export class NewTweetMonitor implements OnModuleInit{
   private readonly tweetAnalysisUrl:string;
   private logger = new Logger(NewTweetMonitor.NAME);
   private started = false;
+  tweetsPipelineFactory: PipelineFactory<any, Tweet>
 
   constructor(private usersService: TwitterUsersService,
               private tweetsService: TweetsService,
@@ -35,40 +37,52 @@ export class NewTweetMonitor implements OnModuleInit{
     this.events = new EventEmitter();
     this.events.on(NEXT_EVENT, () => this.exec());
     this.tweetAnalysisUrl = env.TWEET_ANALYSIS_URL;
+    this.tweetsPipelineFactory = new PipelineFactory<string|ITweetSample|ITweet, Tweet>([
+     {
+        name: "cast",
+        pipe: new RawTweetPipe(),
+      }, {
+        name: "assert_lang",
+        pipe: new LanguageRule(),
+      }, {
+        name: "analyse_topics",
+        pipe: new TopicsRule(this.tweetAnalysisUrl),
+      }, {
+        name: "tag_tweets",
+        pipe: new TagTweetPipe([IMPORTED_TAG])
+      },{
+        name: "save",
+        pipe: new SaveTweetPipe(this.tweetsService.tweetsRepository)
+      }
+    ], 0);
   }
 
   async onModuleInit() {
     this.queue = await this.usersService.query({withTags: [IMPORTED_TAG]});
+    this.start();
   }
 
   start(){
+    this.logger.log("Started monitoring new tweets");
     this.started = true;
     this.events.emit(NEXT_EVENT);
   }
 
-  tweetsPipelineFactory() {
-    return new BatchPipeline<ITweet, Tweet>([
-      new RawTweetPipe(),
-      new ProcessingPipe<Tweet>(1,[
-        new LanguageRule(),
-        new TopicsRule(this.tweetAnalysisUrl)
-      ]),
-      new SaveTweetPipe(this.tweetsService)
-    ])
-  }
-
   async exec() {
+    const user = this.queue.shift();
     try {
-      const user = this.queue.shift();
       const newTweets = await this.tweetsService.fetchLatestTweet(user);
-      const tweets = await this.tweetsPipelineFactory().process(newTweets);
+      const tweets = await this.tweetsPipelineFactory.process(newTweets);
       tweets.forEach(tweet => this.eventService.emit(new NewTweetEvent(tweet, user)));
     } catch (error){
       if (!error.healthThresholdNotReached){
         this.logger.error(error.message);
         console.log(error.stack)
+      } else {
+        console.log("Data error", error.message);
       }
     }
+    this.queue.push(user);
     this.events.emit(NEXT_EVENT);
   }
 
