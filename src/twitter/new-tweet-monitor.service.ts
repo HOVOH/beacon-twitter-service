@@ -17,6 +17,8 @@ import { EventService } from "../events/event.service";
 import { NewTweetEvent } from "./events/new-tweet.event";
 import { ITweetSample } from "./api/tweet-sample";
 import { TagTweetPipe } from "../pipeline/TagTweetPipe";
+import { TopicsPipe } from "../pipeline/TopicsPipe";
+import { TopicsAssertionsPipe } from "../pipeline/TopicsAssertionsPipe";
 
 const NEXT_EVENT = "next";
 
@@ -46,13 +48,16 @@ export class NewTweetMonitor implements OnModuleInit{
         pipe: new LanguageRule(),
       }, {
         name: "analyse_topics",
-        pipe: new TopicsRule(this.tweetAnalysisUrl),
+        pipe: new TopicsPipe(this.tweetAnalysisUrl),
       }, {
         name: "tag_tweets",
         pipe: new TagTweetPipe([IMPORTED_TAG])
       },{
         name: "save",
         pipe: new SaveTweetPipe(this.tweetsService.tweetsRepository)
+      }, {
+        name: "assert_topics_relevancy",
+        pipe: new TopicsAssertionsPipe()
       }
     ], 0);
   }
@@ -75,12 +80,7 @@ export class NewTweetMonitor implements OnModuleInit{
       const tweets = await this.tweetsPipelineFactory.process(newTweets);
       tweets.forEach(tweet => this.eventService.emit(new NewTweetEvent(tweet, user)));
     } catch (error){
-      if (!error.healthThresholdNotReached){
-        this.logger.error(error.message);
-        console.log(error.stack)
-      } else {
-        console.log("Data error", error.message);
-      }
+      console.log("Data error", error.message);
     }
     this.queue.push(user);
     this.events.emit(NEXT_EVENT);

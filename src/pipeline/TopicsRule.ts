@@ -1,25 +1,20 @@
 import { Tweet } from "../twitter/entities/tweet.entity";
 import { CriticalDataError, TransformerPipe } from "@hovoh/ts-data-pipeline";
 import { HttpClient } from "../http/http-client";
+import { TopicsPipe } from "./TopicsPipe";
+import { TopicsAssertionsPipe } from "./TopicsAssertionsPipe";
 
 export class TopicsRule extends TransformerPipe<Tweet, Tweet> {
-    tweetAnalysisClient: HttpClient;
+    topicsPipe: TopicsPipe;
+    topicsAssertion: TopicsAssertionsPipe;
     constructor(url: string) {
         super();
-        this.tweetAnalysisClient = new HttpClient(url)
+        this.topicsPipe = new TopicsPipe(url);
     }
 
     async transform(tweet: Tweet): Promise<Tweet>{
-        const response = await this.tweetAnalysisClient.post("", {}, { text: tweet.text });
-        tweet.meta.topicsScore = response.score;
-        this.assertRelevantTopic(tweet);
+        tweet = await this.topicsPipe.evalTopics(tweet);
+        TopicsAssertionsPipe.assertRelevantTopic(tweet);
         return tweet;
-    }
-
-    assertRelevantTopic(tweet: Tweet){
-        const topics = tweet.meta.topicsScore
-        if (Object.keys(topics).length === 0 || !Object.keys(topics).find(key => topics[key] >= 0.03)){
-            throw new CriticalDataError("No relevant topics", tweet.text);
-        }
     }
 }
