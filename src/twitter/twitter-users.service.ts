@@ -94,6 +94,20 @@ export class TwitterUsersService{
     return this.twitterUsersRepo.findOne(user);
   }
 
+  findOneByTid(tid: string){
+    return this.findOne({userId: tid});
+  }
+
+  async lookupTid(tid: string){
+    const user = await this.findOneByTid(tid);
+    const newest = await this.lookUpPipeline().processUnit(await this.twitterApi.getUser(tid));
+    if (user) {
+      user.mergeChange(newest);
+      return user;
+    }
+    return newest;
+  }
+
   save(user: TwitterUser){
     return this.twitterUsersRepo.save(user);
   }

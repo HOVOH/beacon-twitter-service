@@ -64,12 +64,12 @@ export class FollowingMonitorService implements OnModuleInit{
           removed: stoppedFollowingTids
         });
         user = await this.twitterUsersService.save(user);
-        const startedFollowing = await Promise.all(startedFollowingTids
+        let startedFollowing = await Promise.all(startedFollowingTids
           .map(tid => following.find(user => user.userId === tid))
           .map(user => this.twitterUsersService.mergeWithRecords(user)));
+        startedFollowing = await this.twitterUsersService.saveMany(startedFollowing);
         const stoppedFollowing = await Promise.all(stoppedFollowingTids
-          .map(id => following.find(user => user.userId === id))
-          .map(user => this.twitterUsersService.mergeWithRecords(user)));
+          .map(tid => this.twitterUsersService.lookupTid(tid)));
         this.eventService.emit(new NewFollowingEvent(user, startedFollowing, stoppedFollowing))
       }
       this.queue.push(user);

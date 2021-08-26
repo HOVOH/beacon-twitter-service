@@ -60,6 +60,25 @@ export class TwitterApi {
     return response.data;
   }
 
+  async getUser(tid: string){
+    let response: IResponse<IUser>;
+    try {
+      response = await this.fetchClient.get("2/users/"+tid, {
+        "user.fields": FULL_USER_FIELDS
+      });
+    } catch (error) {
+      const errorReponse = error as Response;
+      if (errorReponse.status === 404){
+        throw new ApplicationError(USER_NOT_FOUND);
+      } else {
+        this.logger.error("getUser failed for tid: "+tid)
+        console.log(errorReponse);
+        throw new ApplicationError(UNEXPECTED_ERROR);
+      }
+    }
+    return response.data;
+  }
+
   getUsersTweetsHistory(id: string, query?: {"tweet.fields"?: string, since_id?: string}, maxNumber = 1000): Promise<ITweet[]>{
     const paginationScroller = new PaginationScroller<ITweet>(this.fetchClient, this.tweetTimelineRateLimiter, 900);
     query = Object.assign({

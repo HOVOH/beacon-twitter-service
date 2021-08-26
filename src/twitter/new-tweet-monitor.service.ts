@@ -80,7 +80,8 @@ export class NewTweetMonitor implements OnModuleInit{
       const tweets = await this.tweetsPipelineFactory.process(newTweets);
       tweets.forEach(tweet => this.eventService.emit(new NewTweetEvent(tweet, user)));
     } catch (error){
-      console.log("Data error", error.message);
+      this.logger.error( error.message);
+      console.log(error);
     }
     this.queue.push(user);
     this.events.emit(NEXT_EVENT);
