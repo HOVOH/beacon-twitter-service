@@ -38,7 +38,7 @@ export class FollowingMonitorService implements OnModuleInit{
 
   next() {
     if (this.running){
-      this.internalEvents.emit("NEXT");
+      this.internalEvents.emit(NEXT_EVENT);
     }
   }
 
@@ -72,13 +72,13 @@ export class FollowingMonitorService implements OnModuleInit{
           .map(tid => this.twitterUsersService.lookupTid(tid)));
         this.eventService.emit(new NewFollowingEvent(user, startedFollowing, stoppedFollowing))
       }
-      this.queue.push(user);
-      this.next();
     } catch (error) {
       this.logger.error(error.message??error.statusMessage);
       console.log(error.stack)
       this.next();
     }
+    this.queue.push(user);
+    this.next();
   }
 
   stop() {

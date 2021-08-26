@@ -15,7 +15,7 @@ export class TopicsAssertionsPipe extends TransformerPipe<Tweet, Tweet> {
 
   static assertRelevantTopic(tweet: Tweet){
     const topics = tweet.meta.topicsScore
-    if (Object.keys(topics).length === 0 || !Object.keys(topics).find(key => topics[key] >= 0.03)){
+    if (Math.max(...Object.keys(topics).map(key => topics[key])) < 0.03){
       throw new CriticalDataError("No relevant topics", tweet.text);
     }
   }

@@ -31,4 +31,30 @@ describe("TopicsRule", () => {
     }
   })
 
+  it("Should throw if max confidence is below 0.03", async () => {
+    const rule = new TopicsRule("http://127.0.0.1:9000/");
+    // @ts-ignore
+    rule.topicsPipe.tweetAnalysisClient = {
+      post: (p, q) => {return Promise.resolve({score:{ test: 0.02}})}
+    }
+    expect.assertions(1)
+    const tweet = tweetFactory();
+    try {
+      const processedTweet = await rule.transform(tweet);
+    } catch (error) {
+      expect(error.critical).toBe(true);
+    }
+  })
+
+  it("Should not throw if min confidence is below 0.03 and max over 0.03", async () => {
+    const rule = new TopicsRule("http://127.0.0.1:9000/");
+    // @ts-ignore
+    rule.topicsPipe.tweetAnalysisClient = {
+      post: (p, q) => {return Promise.resolve({score:{ below: 0.02, above: 0.04}})}
+    }
+    const tweet = tweetFactory();
+    const processedTweet = await rule.transform(tweet);
+    expect(processedTweet.meta.topicsScore.above).toBe(0.04);
+  })
+
 })
