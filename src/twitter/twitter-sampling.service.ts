@@ -96,11 +96,15 @@ export class TwitterSamplingService {
       },
       async (jsonTweet: string) => {
         try{
-          if (jsonTweet){
-            const tweet = await this.tweetsPipelineFactory.processUnit(jsonTweet);
-            if (tweet){
-              const user = await this.twitterUsersPipelineFactory.processUnit(jsonTweet);
-              this.eventEmitter.emit(new SampleTweetEvent(tweet, user));
+          const { data: tweet, health } = await this.tweetsPipelineFactory.processUnit(jsonTweet);
+          if (tweet){
+            console.log(tweet)
+            const { data: user } = await this.twitterUsersPipelineFactory.processUnit(jsonTweet);
+            this.eventEmitter.emit(new SampleTweetEvent(tweet, user));
+          } else {
+            if (health.forStage("analyse_topics").errors.length > 0){
+              console.log(health.forStage("analyse_topics"))
+              console.log(jsonTweet)
             }
           }
         } catch (error){

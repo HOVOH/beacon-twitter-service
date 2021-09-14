@@ -37,7 +37,6 @@ export class TweetsController {
 
   @Delete()
   async deleteTweets(@Query() filter: DeleteTweetsFilter){
-    console.log(split(filter.authorTids))
     const result = await this.tweetsService.delete({
       authorsTids: split(filter.authorTids),
       includeTagged: Boolean(filter.includeTagged)

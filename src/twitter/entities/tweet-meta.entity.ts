@@ -100,7 +100,7 @@ export class TweetMeta extends HasTags{
   private _topics: Label<string[]>[];
 
   @Column()
-  topicsScore: {[k:string ]: number}
+  labels: string[]
 
   @Column()
   lang: LanguageDetectionResults;

@@ -9,7 +9,6 @@ import { ITweet } from "./api/tweet";
 import { Tweet } from "./entities/tweet.entity";
 import { RawTweetPipe } from "../pipeline/RawTweetPipe";
 import { LanguageRule } from "../pipeline/LanguageRule";
-import { TopicsRule } from "../pipeline/TopicsRule";
 import { SaveTweetPipe } from "../pipeline/SaveTweetPipe";
 import { EnvironmentService } from "@hovoh/nestjs-environment-module";
 import { IEnv } from "../app.module";
@@ -77,11 +76,17 @@ export class NewTweetMonitor implements OnModuleInit{
     const user = this.queue.shift();
     try {
       const newTweets = await this.tweetsService.fetchLatestTweet(user);
-      const tweets = await this.tweetsPipelineFactory.process(newTweets);
+      const {data: tweets} = await this.tweetsPipelineFactory.process(newTweets);
       tweets.forEach(tweet => this.eventService.emit(new NewTweetEvent(tweet, user)));
     } catch (error){
-      this.logger.error( error.message);
-      console.log(error);
+      if (error.status === 503) {
+        this.logger.error("Twitter's timeline endpoint unavailable (503)");
+      } else if (error.status) {
+        this.logger.error(`TwitterAPI response: ${error.statusText} (${error.status})`)
+      }else {
+        this.logger.error(error.message);
+        console.log(error);
+      }
     }
     this.queue.push(user);
     this.events.emit(NEXT_EVENT);

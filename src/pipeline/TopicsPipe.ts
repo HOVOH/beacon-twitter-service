@@ -15,7 +15,7 @@ export class TopicsPipe extends TransformerPipe<Tweet, Tweet> {
 
   async evalTopics(tweet:Tweet):Promise<Tweet>{
     const response = await this.tweetAnalysisClient.post("", {}, { text: tweet.text });
-    tweet.meta.topicsScore = response.score;
+    tweet.meta.labels = response.labels;
     return tweet;
   }
 }

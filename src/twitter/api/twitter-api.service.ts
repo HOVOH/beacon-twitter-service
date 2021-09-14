@@ -68,11 +68,14 @@ export class TwitterApi {
       });
     } catch (error) {
       const errorReponse = error as Response;
-      if (errorReponse.status === 404){
+      this.logger.error("getUser failed for tid: "+tid)
+      console.log(errorReponse);
+      throw new ApplicationError(UNEXPECTED_ERROR);
+    }
+    if (response.errors) {
+      if (response.errors.find(error => error.parameter === "id")){
         throw new ApplicationError(USER_NOT_FOUND);
       } else {
-        this.logger.error("getUser failed for tid: "+tid)
-        console.log(errorReponse);
         throw new ApplicationError(UNEXPECTED_ERROR);
       }
     }

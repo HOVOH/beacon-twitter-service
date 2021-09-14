@@ -4,7 +4,7 @@ import { plainToClass } from "class-transformer";
 import { LangCode, LanguageDetectionResults } from "../labeling/language-detection-results.entity";
 import cld from "cld";
 
-const supportedLanguages: LangCode[] = ["en", "fr", "es"];
+const supportedLanguages: LangCode[] = ["en"];
 
 export class LanguageRule extends TransformerPipe<Tweet, Tweet>  {
 

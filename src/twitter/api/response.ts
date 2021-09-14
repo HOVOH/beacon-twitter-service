@@ -12,7 +12,7 @@ export interface IResponse<T>{
     detail: string,
     title: string,
     resource_type: "user",
-    parameter: "username"
+    parameter: "username" | "id"
   }[]
 }
 

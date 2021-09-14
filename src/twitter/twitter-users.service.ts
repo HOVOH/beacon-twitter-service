@@ -100,12 +100,20 @@ export class TwitterUsersService{
 
   async lookupTid(tid: string){
     const user = await this.findOneByTid(tid);
-    const newest = await this.lookUpPipeline().processUnit(await this.twitterApi.getUser(tid));
-    if (user) {
-      user.mergeChange(newest);
-      return user;
+    try {
+      const { data: newest } = await this.lookUpPipeline()
+        .processUnit(await this.twitterApi.getUser(tid))
+      if (!user && newest){
+        return newest;
+      }
+      if (user && newest) {
+        user.mergeChange(newest);
+        return user;
+      }
+    } catch (notFoundOrUnexpectedError){
+
     }
-    return newest;
+    return user;
   }
 
   save(user: TwitterUser){
@@ -149,13 +157,14 @@ export class TwitterUsersService{
   }
 
   async lookupUsers(usernames: string){
-    return this.lookUpPipeline()
+    const {data} = await this.lookUpPipeline()
       .process(await this.twitterApi.getUsers(usernames))
+    return data
   }
 
   async importUsers(usernames: string){
     const iUsers = await this.twitterApi.getUsers(usernames);
-    const users = await this.twitterUsersImportPipelineFactory().process(iUsers);
+    const { data:users } = await this.twitterUsersImportPipelineFactory().process(iUsers);
     const iTweets = await Promise.all(users.map( user => this.twitterApi.getUsersTweetsHistory(user.userId)));
     await this.tweetsImportPipelineFactory().process(iTweets.flatMap(iTweets => iTweets));
     return users;
