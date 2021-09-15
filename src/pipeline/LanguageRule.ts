@@ -22,7 +22,10 @@ export class LanguageRule extends TransformerPipe<Tweet, Tweet>  {
   assertSupportedLang(tweet: Tweet)
   {
     if (!tweet.meta.lang.reliable || !tweet.meta.lang.isOneOf(supportedLanguages)) {
-      throw new CriticalDataError("Language not supported", tweet.meta.lang);
+      throw new CriticalDataError(
+        "Language not supported",
+        { lang: tweet.meta.lang, text: tweet.text }
+        );
     }
   }
 }

@@ -46,7 +46,7 @@ export class TwitterSamplingService {
       this.startTweetSampling();
     }
 
-    this.tweetsPipelineFactory = new PipelineFactory<string|ITweetSample|ITweet, Tweet>([
+    this.tweetsPipelineFactory = new PipelineFactory<string|ITweetSample|ITweet, Tweet>(() => [
       {
         name: "json_parser",
         pipe: new JsonParserPipe<ITweetSample>(),
@@ -68,7 +68,7 @@ export class TwitterSamplingService {
       }
     ], 0);
 
-    this.twitterUsersPipelineFactory = new PipelineFactory<string|ITweetSample|IUser, TwitterUser>([
+    this.twitterUsersPipelineFactory = new PipelineFactory<string|ITweetSample|IUser, TwitterUser>(() => [
       {
         name: "json_parser",
         pipe: new JsonParserPipe<ITweetSample>()
@@ -98,14 +98,8 @@ export class TwitterSamplingService {
         try{
           const { data: tweet, health } = await this.tweetsPipelineFactory.processUnit(jsonTweet);
           if (tweet){
-            console.log(tweet)
             const { data: user } = await this.twitterUsersPipelineFactory.processUnit(jsonTweet);
             this.eventEmitter.emit(new SampleTweetEvent(tweet, user));
-          } else {
-            if (health.forStage("analyse_topics").errors.length > 0){
-              console.log(health.forStage("analyse_topics"))
-              console.log(jsonTweet)
-            }
           }
         } catch (error){
           this.logger.error(error.message+". TweetSample: "+jsonTweet);

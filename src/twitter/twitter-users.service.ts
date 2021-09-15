@@ -45,7 +45,7 @@ export class TwitterUsersService{
   }
 
   lookUpPipeline() {
-    return new PipelineFactory<IUser, TwitterUser>([
+    return new PipelineFactory<IUser, TwitterUser>(() => [
       {
         name: "cast",
         pipe: new RawTwitterUserPipe()
@@ -57,7 +57,7 @@ export class TwitterUsersService{
   }
 
   tweetsImportPipelineFactory () {
-    return new PipelineFactory<ITweet, Tweet>([
+    return new PipelineFactory<ITweet, Tweet>( ()=> [
       {
         name: "cast",
         pipe: new RawTweetPipe() ,
@@ -75,7 +75,7 @@ export class TwitterUsersService{
   }
 
   twitterUsersImportPipelineFactory () {
-    return new PipelineFactory<IUser, TwitterUser>([
+    return new PipelineFactory<IUser, TwitterUser>(() => [
       {
         name: "cast",
         pipe: new RawTwitterUserPipe(),

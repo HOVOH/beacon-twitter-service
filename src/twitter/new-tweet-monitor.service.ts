@@ -38,7 +38,7 @@ export class NewTweetMonitor implements OnModuleInit{
     this.events = new EventEmitter();
     this.events.on(NEXT_EVENT, () => this.exec());
     this.tweetAnalysisUrl = env.TWEET_ANALYSIS_URL;
-    this.tweetsPipelineFactory = new PipelineFactory<string|ITweetSample|ITweet, Tweet>([
+    this.tweetsPipelineFactory = new PipelineFactory<string|ITweetSample|ITweet, Tweet>(() => [
      {
         name: "cast",
         pipe: new RawTweetPipe(),
