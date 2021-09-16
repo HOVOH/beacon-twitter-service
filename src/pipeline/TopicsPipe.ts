@@ -1,4 +1,4 @@
-import { TransformerPipe } from "@hovoh/ts-data-pipeline";
+import { CriticalDataError, TransformerPipe } from "@hovoh/ts-data-pipeline";
 import { Tweet } from "../twitter/entities/tweet.entity";
 import { HttpClient } from "../http/http-client";
 
@@ -19,6 +19,7 @@ export class TopicsPipe extends TransformerPipe<Tweet, Tweet> {
       tweet.meta.labels = response.labels;
     } catch (error){
       console.log("Error while contacting tweet analysis service", error);
+      throw new CriticalDataError("Could'nt reach tweet analysis service", error);
     }
     return tweet;
   }
