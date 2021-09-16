@@ -24,4 +24,4 @@ jobs:
           tags: "ghcr.io/hovoh/twitter-api-service:latest"
           push: true
           build-args: |
-            COMMIT_HASH=${{env.GITHUB_SHA}}
+            COMMIT_HASH=${{github.sha}}
