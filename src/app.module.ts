@@ -48,6 +48,6 @@ export class AppModule implements OnModuleInit{
   logger = new Logger("Application")
 
   onModuleInit(): any {
-    this.logger.log("Commit hash: "+ process.env.COMMIT_HASH)
+    this.logger.log("Current version: "+ process.env.COMMIT_HASH)
   }
 }

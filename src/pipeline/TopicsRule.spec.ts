@@ -1,6 +1,7 @@
 import { HttpClient } from "../http/http-client";
 import { TopicsRule } from "./TopicsRule";
 import { tweetFactory } from "../twitter/entities/factories/tweet.factory";
+import { TopicsAssertionsPipe } from "./TopicsAssertionsPipe";
 
 describe("TopicsRule", () => {
 
@@ -26,6 +27,17 @@ describe("TopicsRule", () => {
     const tweet = tweetFactory();
     try {
       const processedTweet = await rule.transform(tweet);
+    } catch (error) {
+      expect(error.critical).toBe(true);
+    }
+  })
+})
+
+describe("TopicsAssertion", () => {
+  it("Should throw if topics is undefined", async () => {
+    const tweet = tweetFactory();
+    try {
+      const processedTweet = await TopicsAssertionsPipe.assertRelevantTopic(tweet);
     } catch (error) {
       expect(error.critical).toBe(true);
     }
