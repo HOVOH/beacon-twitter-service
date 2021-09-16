@@ -14,8 +14,12 @@ export class TopicsPipe extends TransformerPipe<Tweet, Tweet> {
   }
 
   async evalTopics(tweet:Tweet):Promise<Tweet>{
-    const response = await this.tweetAnalysisClient.post("tweet/label", {}, { text: tweet.text });
-    tweet.meta.labels = response.labels;
+    try {
+      const response = await this.tweetAnalysisClient.post("tweet/label", {}, { text: tweet.text });
+      tweet.meta.labels = response.labels;
+    } catch (error){
+      console.log("Error while contacting tweet analysis service", error);
+    }
     return tweet;
   }
 }

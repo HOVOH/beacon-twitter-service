@@ -97,6 +97,7 @@ export class TwitterSamplingService {
       async (jsonTweet: string) => {
         try{
           const { data: tweet, health } = await this.tweetsPipelineFactory.processUnit(jsonTweet);
+          console.log()
           if (tweet){
             const { data: user } = await this.twitterUsersPipelineFactory.processUnit(jsonTweet);
             this.eventEmitter.emit(new SampleTweetEvent(tweet, user));
