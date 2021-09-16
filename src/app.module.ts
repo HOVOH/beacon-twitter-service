@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Logger, Module, OnModuleInit } from "@nestjs/common";
 import { TwitterModule } from './twitter/twitter.module';
 import { DatabaseModule } from "./database.module";
 import { EventModule } from "./events/event.module";
@@ -43,4 +43,11 @@ export interface IEnv {
     useClass: ValidationPipe,
   },],
 })
-export class AppModule {}
+export class AppModule implements OnModuleInit{
+
+  logger = new Logger("Application")
+
+  onModuleInit(): any {
+    this.logger.log("Commit hash: "+ process.env.COMMIT_HASH)
+  }
+}
