@@ -18,7 +18,6 @@ export class TopicsPipe extends TransformerPipe<Tweet, Tweet> {
       const response = await this.tweetAnalysisClient.post("tweet/label", {}, { text: tweet.text });
       tweet.meta.labels = response.labels;
     } catch (error){
-      console.log("Error while contacting tweet analysis service", error);
       throw new CriticalDataError("Could'nt reach tweet analysis service", error);
     }
     return tweet;
