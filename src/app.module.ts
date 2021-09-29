@@ -16,8 +16,7 @@ export interface IEnv {
   DB_HOST: string;
   DB_PORT: number;
   DB_NAME: string;
-  JWT_SECRET: string;
-  JWT_EXPIRES_IN: string;
+  JWT_PUBLIC_CERTIFICATE_PATH: string;
   TWITTER_API_KEY: string;
   TWITTER_SECRET_KEY: string;
   TWITTER_ACCESS_TOKEN: string;
