@@ -7,6 +7,7 @@ export const TWEET_CONVERSATION_ID = "conversation_id"
 export const TWEET_SOURCE = "source"
 export const TWEET_ENTITIES = "entities"
 export const TWEET_REFERENCED_TWEETS = "referenced_tweets"
+export const TWEET_LANG = "lang"
 
 export const  FULL_TWEET_FIELDS = fieldsConcat(
   TWEET_AUTHOR_ID,
@@ -14,7 +15,8 @@ export const  FULL_TWEET_FIELDS = fieldsConcat(
   TWEET_CONVERSATION_ID,
   TWEET_SOURCE,
   TWEET_ENTITIES,
-  TWEET_REFERENCED_TWEETS
+  TWEET_REFERENCED_TWEETS,
+  TWEET_LANG
 );
 
 export interface Entities{
@@ -53,6 +55,7 @@ export interface ITweetReference {
 
 export interface ITweet {
   text: string,
+  lang: string,
   id: string,
   author_id: string,
   created_at: string,
@@ -66,6 +69,7 @@ export interface ITweet {
 export const iTweetFactory = (iTweet?: Partial<ITweet>) => {
   const fakeTweet:ITweet = {
     text: faker.lorem.sentence(),
+    lang: "en",
     id: faker.datatype.number({max: 1000000})+"",
     author_id: faker.datatype.number({max: 1000000})+"",
     created_at: (new Date).toISOString(),

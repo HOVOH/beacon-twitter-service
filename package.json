@@ -40,7 +40,6 @@
     "axios": "^0.21.1",
     "class-transformer": "^0.4.0",
     "class-validator": "^0.13.1",
-    "cld": "^2.7.0",
     "cookie-parser": "^1.4.5",
     "fast-csv": "^4.3.6",
     "kafkajs": "^1.15.0",

@@ -17,6 +17,9 @@ export class Tweet {
   text: string;
 
   @Column()
+  lang?: string;
+
+  @Column()
   authorId: string;
 
   @Column()
@@ -43,6 +46,7 @@ export class Tweet {
     const tweet = new Tweet();
     tweet.tweetId = iTweet.id;
     tweet.text = iTweet.text;
+    tweet.lang = iTweet.lang;
     tweet.authorId = iTweet.author_id;
     tweet.createdAt = new Date(iTweet.created_at);
     tweet.conversationId = iTweet.conversation_id;
