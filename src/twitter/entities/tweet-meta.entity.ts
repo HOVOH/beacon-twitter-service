@@ -91,6 +91,16 @@ export class TweetReference{
 }
 
 @Entity()
+export class Annotation<T> {
+  name: string;
+  value: T;
+  uncertainty?: number;
+
+
+
+}
+
+@Entity()
 export class TweetMeta extends HasTags{
 
   @Column()
@@ -104,6 +114,9 @@ export class TweetMeta extends HasTags{
 
   @Column()
   lang: LanguageDetectionResults;
+
+  @Column()
+  annotations: Annotation<any>[]
 
   @Column()
   source: string;

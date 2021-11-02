@@ -21,6 +21,8 @@ import { SaveTweetPipe } from "../pipeline/SaveTweetPipe";
 import { GetAuthorPipe } from "../pipeline/GetAuthorPipe";
 import { RawTwitterUserPipe } from "../pipeline/RawTwitterUserPipe";
 import { SaveTwitterUserPipe } from "../pipeline/SaveTwitterUserPipe";
+import { MetricsService } from "../metrics/MetricsService";
+import { TopicsPipe } from "../pipeline/TopicsPipe";
 
 @Injectable()
 export class TwitterSamplingService {
@@ -35,7 +37,8 @@ export class TwitterSamplingService {
   constructor({ env }: EnvironmentService<IEnv>,
               private eventEmitter: EventService,
               private saveTweetPipe: SaveTweetPipe,
-              private saveTwitterUserPipe: SaveTwitterUserPipe
+              private saveTwitterUserPipe: SaveTwitterUserPipe,
+              private metricsService: MetricsService
               ) {
     this.fetchClient = new HttpClient(
       TWITTER_API_LINK,
@@ -61,13 +64,13 @@ export class TwitterSamplingService {
         pipe: new LanguageRule(),
       }, {
         name: "analyse_topics",
-        pipe: new TopicsRule(this.tweetAnalysisUrl),
+        pipe: new TopicsPipe(this.tweetAnalysisUrl),
       }, {
         name: "save",
         pipe: this.saveTweetPipe
       }
     ], 0);
-
+    metricsService.hookTweetSamplePipeline(this.tweetsPipelineFactory);
     this.twitterUsersPipelineFactory = new PipelineFactory<string|ITweetSample|IUser, TwitterUser>(() => [
       {
         name: "json_parser",
@@ -106,7 +109,12 @@ export class TwitterSamplingService {
           console.log(error.stack)
         }
       },
-      (error) => this.logger.error("Stream error "+error.message),
+      (error) => {
+        this.logger.error("Stream error " + error.message);
+        this.logger.log("Waiting 1 min before restart");
+        const timer = new Promise(res => setTimeout(res, 60000));
+        timer.then(() => this.startTweetSampling())
+      },
       ()=> {
         this.logger.log("Twitter sampling stream closed. Waiting 1 min before restart");
         const timer = new Promise(res => setTimeout(res, 60000));

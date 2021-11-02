@@ -16,12 +16,14 @@ import { FollowingMonitorService } from "./following-monitor.service";
 import { ScheduleModule } from "@nestjs/schedule";
 import { NewTweetMonitor } from "./new-tweet-monitor.service";
 import { SystemPurgeService } from "./system-purge.service";
+import { MetricsModule } from "../metrics/MetricsModule";
 
 @Module({
   imports: [
     EnvironmentModule,
     TypeOrmModule.forFeature([Tweet, TwitterUser]),
-    ScheduleModule.forRoot()
+    ScheduleModule.forRoot(),
+    MetricsModule
   ],
   controllers: [TwitterUsersController, TweetsController],
   providers: [

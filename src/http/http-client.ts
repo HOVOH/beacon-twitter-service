@@ -21,7 +21,7 @@ export class HttpClient {
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'
       },
-      body: this.formUrlEncode(body),
+      body: body//this.formUrlEncode(body),
     }).then(this.handleResponse);
   }
 
