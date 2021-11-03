@@ -12,6 +12,6 @@ export class SaveTweetPipe extends SimplePipe<Tweet, Tweet>{
   }
 
   async process(queued: Tweet[]): Promise<Tweet[]> {
-    return this.tweetsRepo.save(queued);
+    return this.tweetsRepo.save(queued)
   }
 }

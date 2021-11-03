@@ -29,7 +29,6 @@ export class TopicsPipe extends TransformerPipe<Tweet, Tweet> {
       const predictions: {name: string, predictions: boolean[], uncertainties: number[]}[] = response.data.annotations;
       for(const prediction of predictions){
         const annotation = new Annotation<boolean>();
-        console.log(prediction)
         annotation.name = prediction.name;
         annotation.value = prediction.predictions[0];
         annotation.uncertainty = prediction.uncertainties[0];

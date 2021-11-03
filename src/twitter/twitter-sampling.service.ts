@@ -81,9 +81,6 @@ export class TwitterSamplingService {
       }, {
         name: "cast",
         pipe: new RawTwitterUserPipe(),
-      }, {
-        name: "save",
-        pipe: this.saveTwitterUserPipe
       }
       ], 0)
   }

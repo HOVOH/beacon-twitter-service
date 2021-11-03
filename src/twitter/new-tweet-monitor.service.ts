@@ -54,9 +54,6 @@ export class NewTweetMonitor implements OnModuleInit{
       },{
         name: "save",
         pipe: new SaveTweetPipe(this.tweetsService.tweetsRepository)
-      }, {
-        name: "assert_topics_relevancy",
-        pipe: new TopicsAssertionsPipe()
       }
     ], 0);
   }

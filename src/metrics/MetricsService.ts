@@ -20,7 +20,7 @@ export class MetricsService {
       (elements) => this.incTweetSample(elements.length)
     );
     pipeline.afterProcess(
-      (hr, outs) => this.incAcceptedTweetSample(outs?.length??0)
+      (hr, outs) => this.incAcceptedTweetSample(outs?outs.length??1:0)
     );
   }
 
