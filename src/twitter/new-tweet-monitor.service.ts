@@ -60,7 +60,9 @@ export class NewTweetMonitor implements OnModuleInit{
 
   async onModuleInit() {
     this.queue = await this.usersService.query({withTags: [IMPORTED_TAG]});
-    this.start();
+    if(this.queue.length > 0) {
+      this.start();
+    }
   }
 
   start(){
