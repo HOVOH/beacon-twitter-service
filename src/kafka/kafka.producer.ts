@@ -20,7 +20,7 @@ export class KafkaProducer implements OnModuleInit, OnModuleDestroy{
       topic: "twitter.tweet",
       messages: [
         {
-          value: JSON.stringify(serialize(event.data))
+          value: JSON.stringify(serialize(event))
         }
       ]
     })
@@ -32,7 +32,7 @@ export class KafkaProducer implements OnModuleInit, OnModuleDestroy{
       topic: "twitter.user.following",
       messages: [
         {
-          value: JSON.stringify(serialize(event.data)),
+          value: JSON.stringify(serialize(event)),
         }
       ]
     })
